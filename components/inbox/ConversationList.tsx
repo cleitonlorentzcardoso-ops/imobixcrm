@@ -1,11 +1,13 @@
 "use client";
 import { ehAFila } from "@/lib/inbox/comando-da-conversa";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useT } from "@/hooks/i18n/useT";
 import type { InfiniteData, UseInfiniteQueryResult } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useChannelSessions } from "@/hooks/channels/useChannelSessions";
+import { apiClient } from "@/lib/api/client";
+import { toast } from "sonner";
 
 import { useAutomaticoAtivo } from "@/hooks/ai/useAutomaticoAtivo";
 
@@ -62,6 +64,9 @@ export function ConversationList({
   // Uma leitura por lista, compartilhada por todas as linhas (react-query dedupa
   // com o cabeçalho, que faz a mesma pergunta).
   const automaticoDaOrg = useAutomaticoAtivo();
+  const [bulkMode, setBulkMode] = useState(false);
+  const [bulkIds, setBulkIds] = useState<Set<string>>(new Set());
+  const [bulkSaving, setBulkSaving] = useState(false);
 
   // Sem filtro de cliente: TODO filtro é parâmetro do schema e roda no banco.
   // `clientFilter` era o mecanismo que permitia um filtro existir fora do contrato
@@ -70,6 +75,23 @@ export function ConversationList({
     () => (q.data?.pages.flatMap((p) => p.data) ?? []) as ConversationWithContact[],
     [q.data],
   );
+  const toggleBulk = (id: string) => setBulkIds((current) => {
+    const next = new Set(current); next.has(id) ? next.delete(id) : next.add(id); return next;
+  });
+  const selectAllLoaded = () => setBulkIds(new Set(items.map((item) => item.id)));
+  async function applyBulk(status: "closed" | "archived") {
+    const targets = items.filter((item) => bulkIds.has(item.id));
+    if (!targets.length) return;
+    setBulkSaving(true);
+    try {
+      await Promise.all(targets.map((item) => status === "closed"
+        ? apiClient.post(`/api/v1/conversations/${item.id}/close`, { expected_revision: item.service_revision })
+        : apiClient.patch(`/api/v1/conversations/${item.id}`, { status: "archived", expected_revision: item.service_revision })));
+      toast.success(t("Ação aplicada às conversas selecionadas."));
+      setBulkIds(new Set()); setBulkMode(false); await q.refetch();
+    } catch { toast.error(t("Não foi possível concluir a ação em massa. Atualize a lista e tente novamente.")); }
+    finally { setBulkSaving(false); }
+  }
 
   // Notify parent of currently-visible IDs (for j/k nav). Must use effect
   // (not render-time call) — invoking onVisibleChange during render triggers
@@ -167,6 +189,14 @@ export function ConversationList({
 
   return (
     <div className="flex h-full flex-col">
+      <div className="flex min-h-12 items-center justify-between gap-2 border-b border-border px-3 py-2">
+        {!bulkMode ? <Button size="sm" variant="ghost" onClick={() => setBulkMode(true)}>{t("Selecionar conversas")}</Button> : <>
+          <Button size="sm" variant="ghost" onClick={selectAllLoaded}>{t("Selecionar todas")}</Button>
+          <span className="text-xs text-muted-foreground">{t("{n} selecionadas").replace("{n}", String(bulkIds.size))}</span>
+          <Button size="sm" variant="ghost" disabled={bulkSaving} onClick={() => { setBulkMode(false); setBulkIds(new Set()); }}>{t("Cancelar")}</Button>
+        </>}
+        {bulkMode && bulkIds.size > 0 && <span className="flex gap-1"><Button size="sm" variant="outline" disabled={bulkSaving} onClick={() => void applyBulk("closed")}>{t("Fechar")}</Button><Button size="sm" disabled={bulkSaving} onClick={() => void applyBulk("archived")}>{t("Arquivar")}</Button></span>}
+      </div>
       <div className="flex-1 overflow-y-auto">
         {/* Vazio por FILTRO: fica DENTRO do return, nunca como `return` precoce —
             e por isso o bloco do `hasNextPage` abaixo continua sendo alcancado. */}
@@ -196,6 +226,9 @@ export function ConversationList({
             mostrarAtendente={mostrarAtendente}
             mostrarAutomatico={mostrarAutomatico}
             automaticoDaOrg={automaticoDaOrg.data}
+            bulkMode={bulkMode}
+            isBulkSelected={bulkIds.has(c.id)}
+            onToggleBulk={toggleBulk}
           />
         ))}
         {q.hasNextPage && (

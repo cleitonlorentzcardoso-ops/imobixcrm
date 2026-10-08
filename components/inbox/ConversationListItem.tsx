@@ -62,6 +62,9 @@ interface Props {
    * afirme nada".
    */
   automaticoDaOrg?: boolean;
+  bulkMode?: boolean;
+  isBulkSelected?: boolean;
+  onToggleBulk?: (id: string) => void;
 }
 
 /**
@@ -135,6 +138,9 @@ export function ConversationListItem({
   mostrarAtendente,
   mostrarAutomatico = true,
   automaticoDaOrg,
+  bulkMode = false,
+  isBulkSelected = false,
+  onToggleBulk,
 }: Props) {
   const localeDaData = useLocaleDeData();
   const t = useT();
@@ -232,14 +238,16 @@ export function ConversationListItem({
     <button
       type="button"
       data-conversation-id={conversation.id}
-      onClick={() => onSelect(conversation.id)}
+      onClick={() => bulkMode ? onToggleBulk?.(conversation.id) : onSelect(conversation.id)}
       className={cn(
         "group relative flex w-full items-start gap-3 border-b border-border/70 px-3 py-2.5 text-left transition-colors hover:bg-surface-elevated",
         "focus-visible:outline-hidden focus-visible:bg-surface-elevated",
         isSelected && "bg-accent-50 hover:bg-accent-50",
       )}
       aria-current={isSelected ? "true" : undefined}
+      aria-pressed={bulkMode ? isBulkSelected : undefined}
     >
+      {bulkMode && <span className={cn("mt-2 grid h-5 w-5 shrink-0 place-items-center rounded border text-xs", isBulkSelected ? "border-accent bg-accent text-white" : "border-border")}>{isBulkSelected ? "✓" : ""}</span>}
       {isSelected && (
         <span className="absolute inset-y-0 left-0 w-0.5 bg-accent" aria-hidden />
       )}
