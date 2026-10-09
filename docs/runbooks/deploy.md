@@ -100,16 +100,41 @@ Antes da primeira release, cadastre estes **Actions secrets** do repositório em
 | `VPS_SSH_USER` | usuário dedicado ao deploy, com acesso ao Docker |
 | `VPS_SSH_PRIVATE_KEY` | chave privada ED25519 desse usuário |
 | `VPS_SSH_KNOWN_HOSTS` | linha de host público do servidor, já conferida por fingerprint |
-| `VPS_DEPLOY_PATH` | diretório absoluto do clone instalado, por exemplo `/var/www/crm` |
 | `VPS_PUBLIC_URL` | URL HTTPS pública do CRM, por exemplo `https://crm.exemplo.com.br` |
 
 Não use senha SSH nem desligue a verificação de host. A chave pública correspondente
 à `VPS_SSH_PRIVATE_KEY` deve entrar em `~/.ssh/authorized_keys` do usuário de deploy;
-ele precisa pertencer ao grupo `docker` para o `update.sh` operar a instalação. Para
-preencher `VPS_SSH_KNOWN_HOSTS`, obtenha a chave pública do host por um canal que você
-já confia e confira o fingerprint antes de salvá-la. O workflow recusa chave ausente,
-host desconhecido, tag fora de `vX.Y.Z`, update que falhe ou domínio que não responda
-`200` em `/` e `307` em `/app`.
+ele precisa pertencer ao grupo `docker`. Como a instalação pode ficar sob `/root`, o
+usuário recebe apenas permissão para executar o wrapper abaixo — não acesso de leitura
+ao diretório raiz nem `sudo` genérico. Ajuste `/root/deskcommcrm` se o clone estiver em
+outro local e execute, uma única vez, como `root` na VPS:
+
+```bash
+install -d -m 755 /usr/local/sbin
+cat >/usr/local/sbin/imobixcrm-deploy <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+release_tag="${1:?informe a tag vX.Y.Z}"
+[[ "$release_tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?$ ]] || {
+  echo "tag de release invalida" >&2
+  exit 2
+}
+cd -- /root/deskcommcrm
+bash hostgator-setup-kit/update.sh --to "$release_tag"
+bash hostgator-setup-kit/healthcheck.sh
+EOF
+chown root:root /usr/local/sbin/imobixcrm-deploy
+chmod 750 /usr/local/sbin/imobixcrm-deploy
+printf '%s\n' 'github-deploy ALL=(root) NOPASSWD: /usr/local/sbin/imobixcrm-deploy' \
+  >/etc/sudoers.d/github-deploy-imobixcrm
+chmod 440 /etc/sudoers.d/github-deploy-imobixcrm
+visudo -cf /etc/sudoers.d/github-deploy-imobixcrm
+```
+
+Para preencher `VPS_SSH_KNOWN_HOSTS`, obtenha a chave pública do host por um canal que
+você já confia e confira o fingerprint antes de salvá-la. O workflow recusa chave
+ausente, host desconhecido, tag fora de `vX.Y.Z`, update que falhe ou domínio que não
+responda `200` em `/` e `307` em `/app`.
 
 ---
 

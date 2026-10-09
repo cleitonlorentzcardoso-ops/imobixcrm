@@ -18,7 +18,6 @@ jobs:
     environment: production
     env:
       RELEASE_TAG: ${{ github.event.release.tag_name }}
-      VPS_DEPLOY_PATH: ${{ secrets.VPS_DEPLOY_PATH }}
       VPS_PUBLIC_URL: ${{ secrets.VPS_PUBLIC_URL }}
       VPS_SSH_HOST: ${{ secrets.VPS_SSH_HOST }}
       VPS_SSH_KNOWN_HOSTS: ${{ secrets.VPS_SSH_KNOWN_HOSTS }}
@@ -35,7 +34,7 @@ jobs:
             *) echo "::error::A release precisa usar uma tag semântica vX.Y.Z."; exit 1 ;;
           esac
 
-          for chave in VPS_DEPLOY_PATH VPS_PUBLIC_URL VPS_SSH_HOST VPS_SSH_KNOWN_HOSTS VPS_SSH_PORT VPS_SSH_PRIVATE_KEY VPS_SSH_USER; do
+          for chave in VPS_PUBLIC_URL VPS_SSH_HOST VPS_SSH_KNOWN_HOSTS VPS_SSH_PORT VPS_SSH_PRIVATE_KEY VPS_SSH_USER; do
             if [ -z "${!chave}" ]; then
               echo "::error::O secret ${chave} não está configurado para o deploy da VPS."
               exit 1
@@ -82,7 +81,7 @@ jobs:
         run: |
           set -euo pipefail
           trap 'rm -f "$RUNNER_TEMP/vps-deploy-key"' EXIT
-          comando=$(printf 'cd -- %q && bash hostgator-setup-kit/update.sh --to %q && bash hostgator-setup-kit/healthcheck.sh' "$VPS_DEPLOY_PATH" "$RELEASE_TAG")
+          comando=$(printf 'sudo -n /usr/local/sbin/imobixcrm-deploy %q' "$RELEASE_TAG")
           ssh -i "$RUNNER_TEMP/vps-deploy-key" \
             -o BatchMode=yes \
             -o StrictHostKeyChecking=yes \
