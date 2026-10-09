@@ -65,6 +65,13 @@ const DIR = join(process.cwd(), ".github/workflows");
  */
 const GATILHO_ESPERADO: Record<string, { condicao: string | null; efeito: string }> = {
   // --- a cadeia que leva o conserto até a VPS ---------------------------------
+  "deploy-vps.yml::publicar-na-vps": {
+    condicao: null,
+    efeito:
+      "A release publicada já teve as imagens conferidas; este job manda a VPS instalada buscar " +
+      "EXATAMENTE essa tag pelo update.sh. Se ele sumir, GitHub fica verde e o servidor continua " +
+      "na versão anterior sem aviso.",
+  },
   "release.yml::abrir-pr-de-release": {
     condicao: "github.event_name == 'workflow_dispatch'",
     efeito:
