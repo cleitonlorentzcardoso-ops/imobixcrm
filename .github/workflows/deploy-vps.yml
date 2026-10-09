@@ -1,0 +1,100 @@
+name: Deploy da release na VPS
+
+# A release nasce enquanto a publicação das imagens da tag ainda pode estar
+# terminando. O job espera as quatro imagens antes de tocar na VPS e então pede
+# o atualizador oficial: backup, baseline, pull e checagem interna ficam no
+# único caminho suportado pelo produto.
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  publicar-na-vps:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    env:
+      RELEASE_TAG: ${{ github.event.release.tag_name }}
+      VPS_DEPLOY_PATH: ${{ secrets.VPS_DEPLOY_PATH }}
+      VPS_PUBLIC_URL: ${{ secrets.VPS_PUBLIC_URL }}
+      VPS_SSH_HOST: ${{ secrets.VPS_SSH_HOST }}
+      VPS_SSH_KNOWN_HOSTS: ${{ secrets.VPS_SSH_KNOWN_HOSTS }}
+      VPS_SSH_PORT: ${{ secrets.VPS_SSH_PORT || '22' }}
+      VPS_SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+      VPS_SSH_USER: ${{ secrets.VPS_SSH_USER }}
+    steps:
+      - name: Validar a configuração de deploy
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "$RELEASE_TAG" in
+            v[0-9]*.[0-9]*.[0-9]*) ;;
+            *) echo "::error::A release precisa usar uma tag semântica vX.Y.Z."; exit 1 ;;
+          esac
+
+          for chave in VPS_DEPLOY_PATH VPS_PUBLIC_URL VPS_SSH_HOST VPS_SSH_KNOWN_HOSTS VPS_SSH_PORT VPS_SSH_PRIVATE_KEY VPS_SSH_USER; do
+            if [ -z "${!chave}" ]; then
+              echo "::error::O secret ${chave} não está configurado para o deploy da VPS."
+              exit 1
+            fi
+          done
+
+          case "$VPS_PUBLIC_URL" in
+            https://*) ;;
+            *) echo "::error::VPS_PUBLIC_URL precisa começar com https://."; exit 1 ;;
+          esac
+
+      - name: Preparar a conexão SSH verificada
+        shell: bash
+        run: |
+          set -euo pipefail
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$VPS_SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/known_hosts"
+          printf '%s\n' "$VPS_SSH_PRIVATE_KEY" > "$RUNNER_TEMP/vps-deploy-key"
+          chmod 600 "$RUNNER_TEMP/vps-deploy-key"
+
+      - name: Esperar as imagens desta release no GHCR
+        shell: bash
+        run: |
+          set -euo pipefail
+          versao="${RELEASE_TAG#v}"
+          for tentativa in $(seq 1 60); do
+            faltando=""
+            for imagem in deskcommcrm deskcomm-worker deskcomm-scheduler deskcomm-voice-agent; do
+              docker buildx imagetools inspect "ghcr.io/${GITHUB_REPOSITORY_OWNER}/${imagem}:${versao}" >/dev/null 2>&1 || faltando="${faltando} ${imagem}"
+            done
+            if [ -z "$faltando" ]; then
+              echo "As imagens da versão ${versao} estão prontas."
+              exit 0
+            fi
+            echo "Aguardando imagens:${faltando}"
+            sleep 15
+          done
+          echo "::error::As imagens da release ${RELEASE_TAG} não ficaram disponíveis no GHCR a tempo:${faltando}"
+          exit 1
+
+      - name: Atualizar a VPS para esta release
+        shell: bash
+        run: |
+          set -euo pipefail
+          trap 'rm -f "$RUNNER_TEMP/vps-deploy-key"' EXIT
+          comando=$(printf 'cd -- %q && bash hostgator-setup-kit/update.sh --to %q && bash hostgator-setup-kit/healthcheck.sh' "$VPS_DEPLOY_PATH" "$RELEASE_TAG")
+          ssh -i "$RUNNER_TEMP/vps-deploy-key" \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            -p "$VPS_SSH_PORT" \
+            "$VPS_SSH_USER@$VPS_SSH_HOST" "$comando"
+
+      - name: Confirmar que o domínio público voltou
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="${VPS_PUBLIC_URL%/}"
+          raiz=$(curl --connect-timeout 10 --max-time 30 --retry 3 --retry-all-errors -sS -o /dev/null -w '%{http_code}' "$base/")
+          app=$(curl --connect-timeout 10 --max-time 30 --retry 3 --retry-all-errors -sS -o /dev/null -w '%{http_code}' "$base/app")
+          test "$raiz" = 200 || { echo "::error::A raiz pública respondeu HTTP $raiz (esperado: 200)."; exit 1; }
+          test "$app" = 307 || { echo "::error::A rota /app respondeu HTTP $app (esperado: 307)."; exit 1; }

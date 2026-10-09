@@ -82,6 +82,35 @@ commit → push → PR → merge na main → CI publica imagem → VPS puxa
 > `stable`; quem opera um cliente usa o número da versão. Ver
 > [`../doctrine/packaging.md`](../doctrine/packaging.md).
 
+### Deploy automático da VPS mantida pelo projeto
+
+Uma VPS administrada por este repositório pode receber a release assim que ela é
+publicada. O workflow [`deploy-vps.yml`](../../.github/workflows/deploy-vps.yml)
+espera as quatro imagens daquela versão no GHCR e executa o mesmo `update.sh`
+oficial, apontado para a tag da release; portanto não há build no servidor e
+não existe o risco de ele puxar o topo intermediário da `main`.
+
+Antes da primeira release, cadastre estes **Actions secrets** do repositório em
+**Settings → Secrets and variables → Actions**:
+
+| Secret | Valor |
+|---|---|
+| `VPS_SSH_HOST` | IP ou hostname da VPS |
+| `VPS_SSH_PORT` | porta SSH (normalmente `22`) |
+| `VPS_SSH_USER` | usuário dedicado ao deploy, com acesso ao Docker |
+| `VPS_SSH_PRIVATE_KEY` | chave privada ED25519 desse usuário |
+| `VPS_SSH_KNOWN_HOSTS` | linha de host público do servidor, já conferida por fingerprint |
+| `VPS_DEPLOY_PATH` | diretório absoluto do clone instalado, por exemplo `/var/www/crm` |
+| `VPS_PUBLIC_URL` | URL HTTPS pública do CRM, por exemplo `https://crm.exemplo.com.br` |
+
+Não use senha SSH nem desligue a verificação de host. A chave pública correspondente
+à `VPS_SSH_PRIVATE_KEY` deve entrar em `~/.ssh/authorized_keys` do usuário de deploy;
+ele precisa pertencer ao grupo `docker` para o `update.sh` operar a instalação. Para
+preencher `VPS_SSH_KNOWN_HOSTS`, obtenha a chave pública do host por um canal que você
+já confia e confira o fingerprint antes de salvá-la. O workflow recusa chave ausente,
+host desconhecido, tag fora de `vX.Y.Z`, update que falhe ou domínio que não responda
+`200` em `/` e `307` em `/app`.
+
 ---
 
 ## 4. Exceção: imagem construída na VPS
