@@ -55,7 +55,9 @@ const INBOX_TABS: { value: InboxTab; label: string }[] = [
   // significado mudou (deixou de filtrar `ai_handling` e passou a perguntar a
   // régua do motor) — e a posição sim: ela era a última fora do padrão.
   { value: "ai", label: "Automático" },
-  { value: "unassigned", label: "Fila" },
+  // A gestão de FILAS tem área própria. Aqui sobra a visão operacional de tudo
+  // que ainda está sem responsável, inclusive instalações que não criaram fila.
+  { value: "unassigned", label: "Aguardando" },
   { value: "mine", label: "Minhas" },
   { value: "all", label: "Todas" },
   { value: "closed", label: "Fechadas" },

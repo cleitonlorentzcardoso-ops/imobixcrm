@@ -17,7 +17,7 @@ import type { CapacidadeDaOrganizacao } from "@/lib/organizacao/capacidades";
  * Doutrina: docs/doctrine/sistema-vivo.md — "por qual porta se chega até mim?"
  */
 
-export type NavGroupId = "atendimento" | "crm" | "ia" | "canais" | "analise" | "organizacao";
+export type NavGroupId = "atendimento" | "filas" | "crm" | "ia" | "canais" | "analise" | "organizacao";
 
 export interface NavGroup {
   id: NavGroupId;
@@ -88,6 +88,7 @@ export interface NavMetadata {
  */
 export const NAV_GROUPS: NavGroup[] = [
   { id: "atendimento", label: "Atendimento" },
+  { id: "filas", label: "Filas" },
   { id: "crm", label: "CRM", hub: { href: "/app/crm", label: "Ver tudo em CRM" } },
   { id: "ia", label: "Agente de IA", hub: { href: "/app/ai", label: "Ver tudo em IA" } },
   { id: "canais", label: "Canais" },
@@ -175,6 +176,15 @@ export const NAV_CATALOG = [
     sidebar: true,
     // Quantas conversas a IA passou para a equipe e esperam uma pessoa (aba Fila).
     contador: "fila",
+  },
+  {
+    href: "/app/filas",
+    label: "Gerenciar filas",
+    description: "Organize as filas de entrada, como Locação e Vendas, e quem pode atender em cada uma.",
+    icon: "UsersThree",
+    group: "filas",
+    sidebar: true,
+    minRole: "manager",
   },
   {
     href: "/app/radar",

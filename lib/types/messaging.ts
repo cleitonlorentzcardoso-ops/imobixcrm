@@ -16,6 +16,8 @@ export interface Conversation {
   service_started_at?: string | null;
   current_demanda_id?: string | null;
   assigned_to_user_id: string | null;
+  /** Fila de atendimento antes de alguém assumir. Limpa ao assumir ou transferir para uma pessoa. */
+  service_queue_id?: string | null;
   /**
    * Cópia desnormalizada do nome de quem atende (migration 0202), escrita por
    * `fn_conversation_assign` no mesmo UPDATE que grava `assigned_to_user_id`.
