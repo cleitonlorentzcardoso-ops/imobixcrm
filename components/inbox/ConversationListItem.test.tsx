@@ -7,8 +7,8 @@
  * uma. Props mínimas copiadas de `ConversationList.tsx`, via
  * `__fixtures__/conversa.ts`.
  */
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
 import { ConversationListItem } from "./ConversationListItem";
 import { conversaDeExemplo } from "./__fixtures__/conversa";
@@ -84,5 +84,32 @@ describe("ConversationListItem — bolinha de quem atende", () => {
     );
     expect(screen.getByRole("img", { name: "Encerrada" })).toHaveAttribute("title", "Encerrada");
     expect(screen.queryByRole("img", { name: "Em atendimento" })).toBeNull();
+  });
+});
+
+describe("ConversationListItem — seleção em massa", () => {
+  it("troca a seleção da conversa sem abrir o atendimento", () => {
+    const onSelect = vi.fn();
+    const onToggleBulk = vi.fn();
+
+    render(
+      <ConversationListItem
+        conversation={conversaDeExemplo.conversation}
+        {...conversaDeExemplo.props}
+        isSelected={false}
+        onSelect={onSelect}
+        bulkMode
+        isBulkSelected={false}
+        onToggleBulk={onToggleBulk}
+      />,
+    );
+
+    const item = screen.getByRole("button", { name: /maria/i });
+    expect(item).toHaveAttribute("aria-pressed", "false");
+
+    fireEvent.click(item);
+
+    expect(onToggleBulk).toHaveBeenCalledWith(conversaDeExemplo.conversation.id);
+    expect(onSelect).not.toHaveBeenCalled();
   });
 });
