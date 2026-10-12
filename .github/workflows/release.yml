@@ -2,11 +2,11 @@ name: release
 
 # Os dois atos do ciclo, e nenhum deles cria tag na máquina de ninguém.
 #
-#   1. VOCÊ dispara "Run workflow" → ele lê `.changes/`, calcula o número, monta
-#      a seção do CHANGELOG e abre um PR de release em português dizendo o que
-#      vai sair. Nada é publicado ainda.
-#   2. VOCÊ faz merge desse PR → ele cria a tag `vX.Y.Z`, e é a tag que faz o
-#      `publish-image.yml` publicar as três imagens que a VPS puxa.
+#   1. "Run workflow" lê `.changes/`, calcula o número, monta o CHANGELOG e
+#      abre um PR de release. No fork de testes do Cleiton, o PR de patch/minor
+#      recebe merge automático por padrão; `publicar_rapido: false` permite
+#      revisão manual. Em outros repositórios, o merge continua manual.
+#   2. O merge desse PR cria a tag `vX.Y.Z`, que publica as imagens da VPS.
 #
 # Quem escreve (branch, PR, tag) é o token de um GitHub App, NUNCA o
 # GITHUB_TOKEN. A razão é uma armadilha documentada pelo próprio GitHub: evento
@@ -27,6 +27,10 @@ on:
         description: "Cortar como MAJOR (só quando o dono pedir)"
         type: boolean
         default: false
+      publicar_rapido:
+        description: "No fork de testes, fazer merge automático do PR de release (sem esperar CI)"
+        type: boolean
+        default: true
   push:
     branches: [main]
 
@@ -66,6 +70,12 @@ jobs:
           MAJOR: ${{ inputs.major }}
         run: |
           set -euo pipefail
+          # Mudanças que exigem ação do operador nunca seguem sem revisão.
+          if grep -Eql '^[[:space:]]*impacto:[[:space:]]*exige_acao[[:space:]]*$' .changes/*.md; then
+            echo 'exige_acao=sim' >> "$GITHUB_OUTPUT"
+          else
+            echo 'exige_acao=nao' >> "$GITHUB_OUTPUT"
+          fi
           pedido=()
           if [ "${MAJOR}" = "true" ]; then pedido=(--major); fi
           pnpm exec tsx scripts/cortar-release.ts --escrever "${pedido[@]}" | tee /tmp/corte.txt
@@ -91,11 +101,32 @@ jobs:
             cat /tmp/corte.txt
             echo '```'
             echo
-            echo "Ao fazer merge deste PR, a tag \`v${VERSAO}\` é criada automaticamente e as três imagens são publicadas."
+            echo "Após o merge deste PR, a tag \`v${VERSAO}\` é criada automaticamente e as quatro imagens são publicadas."
             echo "Se algo aqui estiver errado, **feche o PR** em vez de editar o número: corrija o fragmento e dispare o workflow de novo."
           } > /tmp/corpo.md
           gh pr create --base main --head "release/${VERSAO}" \
             --title "Release ${VERSAO}" --body-file /tmp/corpo.md
+
+      - name: Publicar rapidamente no fork de testes
+        if: github.repository == 'cleitonlorentzcardoso-ops/imobixcrm' && inputs.publicar_rapido && !inputs.major && steps.corte.outputs.exige_acao == 'nao'
+        env:
+          GH_TOKEN: ${{ steps.token.outputs.token }}
+          VERSAO: ${{ steps.corte.outputs.versao }}
+        run: |
+          set -euo pipefail
+          # O GitHub pode ainda estar calculando se o PR recém-criado é mergeável.
+          # A tentativa curta evita uma falha transitória sem esperar os jobs longos.
+          for tentativa in 1 2 3 4 5; do
+            if gh pr merge "release/${VERSAO}" --merge; then
+              if [ "$(gh pr view "release/${VERSAO}" --json state --jq .state)" = "MERGED" ]; then
+                echo "PR da v${VERSAO} integrado; a tag, imagens e VPS seguem automaticamente."
+                exit 0
+              fi
+            fi
+            sleep 3
+          done
+          echo "::error::Merge automático falhou. O PR de release permanece aberto para revisão manual."
+          exit 1
 
   cortar-tag:
     if: github.event_name == 'push'

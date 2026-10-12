@@ -2,8 +2,16 @@ name: ci
 
 on:
   pull_request:
+    # Um PR de release só consome fragmentos e escreve o CHANGELOG. A mudança
+    # funcional já entrou na main; a tag ainda passará pelo build de imagens.
+    paths-ignore:
+      - "CHANGELOG.md"
+      - ".changes/**"
   push:
     branches: [main]
+    paths-ignore:
+      - "CHANGELOG.md"
+      - ".changes/**"
 
 # O GITHUB_TOKEN destes jobs serve a `actions/checkout` (clone) e a
 # `actions/setup-node` (manifest de `actions/node-versions`, repo público) —

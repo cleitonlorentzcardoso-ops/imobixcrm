@@ -62,6 +62,26 @@ curl -s -o /dev/null -w '%{http_code}\n' https://<DOMAIN>/app
 
 ## 3. Fluxo completo (do código à produção)
 
+### Modo rápido do fork de testes
+
+No repositório `cleitonlorentzcardoso-ops/imobixcrm`, o workflow `release`
+faz o merge do PR de release automaticamente por padrão para versões patch e
+minor. Isso elimina a espera de uma segunda rodada de CI para um PR que só
+altera `CHANGELOG.md` e `.changes/`. Esses arquivos também não disparam CI,
+E2E, medição de bundle nem a imagem `latest` quando são as únicas mudanças.
+A tag de versão **continua** a construir as quatro imagens no GitHub; o deploy
+da VPS continua esperando as imagens, fazendo backup, executando `update.sh`
+e conferindo a saúde do CRM. A validação funcional detalhada fica para o CRM
+atualizado, como combinado para esta fase de testes.
+
+Para revisar o PR de release manualmente, rode `release` com
+`publicar_rapido: false`; releases major e versões que exigem alguma ação do
+operador nunca recebem merge automático.
+Esse modo rápido depende de a branch `main` do fork não ter verificações
+obrigatórias para esse PR. Se essas regras forem ativadas, reavalie os filtros
+de caminhos antes de publicar: um workflow ignorado por filtro pode deixar
+uma verificação obrigatória pendente.
+
 ```
 commit → push → PR → merge na main → CI publica imagem → VPS puxa
 ```
