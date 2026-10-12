@@ -92,6 +92,7 @@ test.describe("navegação agrupada", () => {
     const titulos = sidebar(page).getByRole("heading");
     await expect(titulos).toHaveText([
       "Atendimento",
+      "Filas",
       "CRM",
       "Agente de IA",
       "Canais",

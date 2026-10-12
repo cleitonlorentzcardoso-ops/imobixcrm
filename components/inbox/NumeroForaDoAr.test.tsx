@@ -29,6 +29,9 @@ vi.mock("@/hooks/inbox/useAssignableMembers", () => ({
 vi.mock("@/hooks/inbox/useTransferConversation", () => ({
   useTransferConversation: () => ({ mutate: vi.fn(), isPending: false }),
 }));
+vi.mock("@/hooks/inbox/useTransferConversationToQueue", () => ({
+  useTransferConversationToQueue: () => ({ mutate: vi.fn(), isPending: false }),
+}));
 vi.mock("@/hooks/auth/AuthProvider", () => ({ useAuth: () => ({ user: { id: "eu" } }) }));
 
 // O Select do Radix não abre em jsdom (pointer capture). O teste mira a regra —

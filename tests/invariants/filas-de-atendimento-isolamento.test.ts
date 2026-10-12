@@ -7,6 +7,7 @@ import { GOV_AGENT_A, GOV_AGENT_B, GOV_MANAGER, GOV_ORG, GOV_SESSION,
 const QUEUE_A = randomUUID();
 const QUEUE_B = randomUUID();
 const ORG_B = randomUUID();
+const AGENT_ORG_B = randomUUID();
 const CONTACT_ROUTED = randomUUID();
 const CONTACT_GENERAL = randomUUID();
 const CONV_ROUTED = randomUUID();
@@ -23,13 +24,18 @@ beforeAll(() => {
   sql(`
     insert into public.organizations (id, slug, legal_name, display_name)
       values ('${ORG_B}', 'fila-b-${ORG_B}', 'Fila B', 'Fila B');
+    insert into auth.users (id, email) values ('${AGENT_ORG_B}', 'fila-b-${AGENT_ORG_B}@invariant.test');
+    insert into public.user_organizations (user_id, organization_id, role, accepted_at)
+      values ('${AGENT_ORG_B}', '${ORG_B}', 'agent', now());
     insert into public.service_queues (id, organization_id, name) values
       ('${QUEUE_A}', '${GOV_ORG}', 'Fila teste A'),
       ('${QUEUE_B}', '${ORG_B}', 'Fila teste B');
     insert into public.service_queue_members (organization_id, queue_id, user_id)
-      values ('${GOV_ORG}', '${QUEUE_A}', '${GOV_AGENT_A}');
+      values ('${GOV_ORG}', '${QUEUE_A}', '${GOV_AGENT_A}'),
+        ('${ORG_B}', '${QUEUE_B}', '${AGENT_ORG_B}');
     insert into public.service_queue_campaign_rules (organization_id, campaign_id, queue_id)
-      values ('${GOV_ORG}', 'meta-campanha-001', '${QUEUE_A}');
+      values ('${GOV_ORG}', 'meta-campanha-001', '${QUEUE_A}'),
+        ('${ORG_B}', 'meta-campanha-002', '${QUEUE_B}');
     insert into public.contacts (id, organization_id, display_name, source_metadata) values
       ('${CONTACT_ROUTED}', '${GOV_ORG}', 'Contato da campanha', '{"ad_platform":"meta_ads","campaign_id":"meta-campanha-001"}'),
       ('${CONTACT_GENERAL}', '${GOV_ORG}', 'Contato sem campanha', '{"ad_platform":"meta_ads"}');
@@ -45,6 +51,7 @@ afterAll(() => {
     delete from public.contacts where id in ('${CONTACT_ROUTED}', '${CONTACT_GENERAL}');
     delete from public.service_queues where id = '${QUEUE_A}';
     delete from public.organizations where id = '${ORG_B}';
+    delete from auth.users where id = '${AGENT_ORG_B}';
   `);
 });
 
@@ -52,6 +59,17 @@ describe("filas de atendimento isoladas por empresa", () => {
   it("um agente vê a fila da própria empresa, nunca a de outra", () => {
     expect(countAs(GOV_AGENT_A, `select count(*) from public.service_queues where id = '${QUEUE_A}'`)).toBe(1);
     expect(countAs(GOV_AGENT_A, `select count(*) from public.service_queues where id = '${QUEUE_B}'`)).toBe(0);
+    expect(countAs(AGENT_ORG_B, `select count(*) from public.service_queues where id = '${QUEUE_B}'`)).toBe(1);
+    expect(countAs(AGENT_ORG_B, `select count(*) from public.service_queues where id = '${QUEUE_A}'`)).toBe(0);
+  });
+
+  it("vínculos de atendentes e regras de campanha também ficam isolados", () => {
+    for (const table of ["service_queue_members", "service_queue_campaign_rules"]) {
+      expect(countAs(GOV_AGENT_A, `select count(*) from public.${table} where queue_id = '${QUEUE_A}'`)).toBe(1);
+      expect(countAs(GOV_AGENT_A, `select count(*) from public.${table} where queue_id = '${QUEUE_B}'`)).toBe(0);
+      expect(countAs(AGENT_ORG_B, `select count(*) from public.${table} where queue_id = '${QUEUE_B}'`)).toBe(1);
+      expect(countAs(AGENT_ORG_B, `select count(*) from public.${table} where queue_id = '${QUEUE_A}'`)).toBe(0);
+    }
   });
 
   it("só gestor altera uma fila, não agente", () => {
