@@ -8,6 +8,15 @@ Se você roda o DeskcommCRM numa VPS, **leia a seção da versão para a qual es
 
 ## [Não lançado]
 
+## [1.82.1] — 2026-10-12
+
+### Alterado
+
+- **Publicação de versões de teste mais rápida** No fork de testes, o PR que prepara a versão agora recebe merge automático
+  por padrão, sem repetir os testes para alterações só no CHANGELOG. As imagens
+  continuam sendo construídas no GitHub e a VPS continua fazendo backup e
+  verificação de saúde antes de entregar a atualização.
+
 ## [1.82.0] — 2026-10-12
 
 ### Adicionado
@@ -11417,7 +11426,8 @@ Primeira versão marcada do DeskcommCRM. O projeto vinha sendo desenvolvido publ
 
 - **Node 22 é obrigatório para desenvolvimento.** A suíte de invariantes instancia o cliente do Supabase, que exige o `WebSocket` global — nativo apenas a partir do Node 22. Isso não afeta quem apenas hospeda: a VPS roda a imagem pronta.
 
-[Não lançado]: https://github.com/melgarafael/DeskcommCRM/compare/v1.82.0...HEAD
+[Não lançado]: https://github.com/melgarafael/DeskcommCRM/compare/v1.82.1...HEAD
+[1.82.1]: https://github.com/melgarafael/DeskcommCRM/compare/v1.82.0...v1.82.1
 [1.82.0]: https://github.com/melgarafael/DeskcommCRM/compare/v1.81.0...v1.82.0
 [1.81.0]: https://github.com/melgarafael/DeskcommCRM/compare/v1.80.0...v1.81.0
 [1.80.0]: https://github.com/melgarafael/DeskcommCRM/compare/v1.79.0...v1.80.0
