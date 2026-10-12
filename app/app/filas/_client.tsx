@@ -16,6 +16,9 @@ import { showApiError } from "@/components/feedback/ApiErrorToast";
 import { useAuth } from "@/hooks/auth/AuthProvider";
 import { useT } from "@/hooks/i18n/useT";
 import { apiClient } from "@/lib/api/client";
+import { rotuloDoContato } from "@/lib/contacts/rotulo-do-contato";
+
+const SUGGESTED_QUEUES = ["Campanha Torresani", "Campanha Altos Sta Helena"] as const;
 
 type Queue = {
   id: string;
@@ -88,7 +91,7 @@ export function FilasClient({ canManage }: { canManage: boolean }) {
 
   const data = queues.data ?? [];
   const selectedQueue = data.find((queue) => queue.id === selectedQueueId);
-  const missingSuggestedQueues = ["Campanha Torresani", "Campanha Altos Sta Helena"]
+  const missingSuggestedQueues = SUGGESTED_QUEUES
     .filter((suggestedName) => !data.some((queue) => queue.name === suggestedName));
 
   function openCreate(suggestedName = "") {
@@ -130,10 +133,10 @@ export function FilasClient({ canManage }: { canManage: boolean }) {
 
       {canManage && missingSuggestedQueues.length > 0 && !queues.isLoading && (
         <div className="flex flex-wrap gap-2">
-          {missingSuggestedQueues.includes("Campanha Torresani") &&
-            <Button variant="outline" onClick={() => openCreate("Campanha Torresani")}>{t("Criar Campanha Torresani")}</Button>}
-          {missingSuggestedQueues.includes("Campanha Altos Sta Helena") &&
-            <Button variant="outline" onClick={() => openCreate("Campanha Altos Sta Helena")}>{t("Criar Campanha Altos Sta Helena")}</Button>}
+          {missingSuggestedQueues.includes(SUGGESTED_QUEUES[0]) &&
+            <Button variant="outline" onClick={() => openCreate(SUGGESTED_QUEUES[0])}>{t("Criar Campanha Torresani")}</Button>}
+          {missingSuggestedQueues.includes(SUGGESTED_QUEUES[1]) &&
+            <Button variant="outline" onClick={() => openCreate(SUGGESTED_QUEUES[1])}>{t("Criar Campanha Altos Sta Helena")}</Button>}
         </div>
       )}
 
@@ -178,7 +181,7 @@ export function FilasClient({ canManage }: { canManage: boolean }) {
                 : <div className="space-y-2">{waiting.data?.conversations.map((conversation) => (
                   <Card key={conversation.id}><CardContent className="flex flex-wrap items-center justify-between gap-3 py-4">
                     <div className="min-w-0">
-                      <p className="font-medium">{conversation.contacts?.display_name || conversation.contacts?.name || conversation.contacts?.phone_number || t("Cliente sem nome")}</p>
+                      <p className="font-medium">{rotuloDoContato(conversation.contacts, t)}</p>
                       <p className="truncate text-sm text-muted-foreground">{conversation.last_message_preview || t("Sem prévia")}</p>
                     </div>
                     <div className="flex gap-2">
