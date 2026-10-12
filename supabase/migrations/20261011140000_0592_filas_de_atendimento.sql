@@ -33,12 +33,12 @@ alter table public.service_queues enable row level security;
 alter table public.service_queue_members enable row level security;
 drop policy if exists tenant_isolation_service_queues_all on public.service_queues;
 create policy tenant_isolation_service_queues_all on public.service_queues
-  for all using (organization_id = any(public.fn_user_org_ids()))
-  with check (organization_id = any(public.fn_user_org_ids()));
+  for all using (organization_id in (select public.fn_user_org_ids()))
+  with check (organization_id in (select public.fn_user_org_ids()));
 drop policy if exists tenant_isolation_service_queue_members_all on public.service_queue_members;
 create policy tenant_isolation_service_queue_members_all on public.service_queue_members
-  for all using (organization_id = any(public.fn_user_org_ids()))
-  with check (organization_id = any(public.fn_user_org_ids()));
+  for all using (organization_id in (select public.fn_user_org_ids()))
+  with check (organization_id in (select public.fn_user_org_ids()));
 
 create or replace function public.fn_create_service_queue(
   p_organization_id uuid, p_name text, p_description text, p_member_ids uuid[], p_is_default boolean default false
