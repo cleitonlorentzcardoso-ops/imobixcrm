@@ -94,6 +94,7 @@ export function ReassignDialog({
   const temAbaNumero = numero != null && numeros.length > 0;
   const temAbaFila = (filas.data ?? []).length > 0;
   const abaAtual = aba === "fila" && temAbaFila ? "fila" : aba === "numero" && temAbaNumero ? "numero" : "atendente";
+  const quantidadeDeAbas = 1 + Number(temAbaFila) + Number(temAbaNumero);
 
   function close(v: boolean) {
     if (!v) {
@@ -133,9 +134,9 @@ export function ReassignDialog({
 
         {(temAbaNumero || temAbaFila) && (
           <Tabs value={abaAtual} onValueChange={(v) => setAba(v as AbaDeTransferencia)}>
-            <TabsList className={`grid w-full ${temAbaNumero ? "grid-cols-3" : "grid-cols-2"}`}>
+            <TabsList className={`grid w-full ${quantidadeDeAbas === 3 ? "grid-cols-3" : "grid-cols-2"}`}>
               <TabsTrigger value="atendente">{t("Atendente")}</TabsTrigger>
-              <TabsTrigger value="fila">{t("Fila")}</TabsTrigger>
+              {temAbaFila && <TabsTrigger value="fila">{t("Fila")}</TabsTrigger>}
               {temAbaNumero && <TabsTrigger value="numero" data-testid="aba-transferir-numero">{t("Número")}</TabsTrigger>}
             </TabsList>
           </Tabs>

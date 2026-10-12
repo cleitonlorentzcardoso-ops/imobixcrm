@@ -156,6 +156,7 @@ export const AUDIT_ACTIONS = [
   // A configuração da fila é uma decisão operacional: registra quem criou o
   // destino que passará a receber leads novos.
   "service_queue.created",
+  "service_queue.updated",
   "rag.conversations_batch_run",
   "lgpd.redact_received",
   "lgpd.data_request_received",

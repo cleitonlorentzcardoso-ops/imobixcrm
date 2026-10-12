@@ -15,7 +15,7 @@ const createQueueSchema = z.object({
   name: z.string().trim().min(2).max(80),
   description: z.string().trim().max(240).optional(),
   member_ids: z.array(z.string().uuid()).max(100).default([]),
-  is_default: z.boolean().optional(),
+  campaign_ids: z.array(z.string().trim().min(1).max(100)).max(100).default([]),
 });
 
 export async function GET(): Promise<Response> {
@@ -25,7 +25,7 @@ export async function GET(): Promise<Response> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("service_queues")
-    .select("id, name, description, is_default, active, created_at, service_queue_members(user_id)")
+    .select("id, name, description, active, created_at, service_queue_members(user_id), service_queue_campaign_rules(campaign_id)")
     .eq("organization_id", authz.org.orgId)
     .eq("active", true)
     .order("name");
@@ -51,9 +51,10 @@ export async function POST(req: NextRequest): Promise<Response> {
     p_name: input.name,
     p_description: input.description ?? null,
     p_member_ids: input.member_ids,
-    p_is_default: input.is_default ?? false,
+    p_campaign_ids: [...new Set(input.campaign_ids)],
   });
   if (error) return fail("unprocessable_entity", error.message, 422, { requestId });
-  await audit({ action: "service_queue.created", actorUserId: authz.user.id, organizationId: authz.org.orgId, resourceType: "service_queue", resourceId: data as string, requestId });
-  return ok({ id: data }, { requestId });
+  const queueId = data as string;
+  await audit({ action: "service_queue.created", actorUserId: authz.user.id, organizationId: authz.org.orgId, resourceType: "service_queue", resourceId: queueId, requestId });
+  return ok({ id: queueId }, { requestId });
 }

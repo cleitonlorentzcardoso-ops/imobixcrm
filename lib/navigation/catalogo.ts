@@ -179,12 +179,12 @@ export const NAV_CATALOG = [
   },
   {
     href: "/app/filas",
-    label: "Gerenciar filas",
-    description: "Organize as filas de entrada, como Locação e Vendas, e quem pode atender em cada uma.",
+    label: "Filas de atendimento",
+    description: "Acompanhe as filas de campanhas e assuma conversas aguardando atendimento.",
     icon: "UsersThree",
     group: "filas",
     sidebar: true,
-    minRole: "manager",
+    minRole: "agent",
   },
   {
     href: "/app/radar",

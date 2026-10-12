@@ -9,6 +9,7 @@ export default async function FilasPage() {
   const user = await requireAuth();
   const org = await resolveActiveOrg(user);
   if (!org) redirect("/app");
-  if (!(user.is_platform_admin && !user.support) && ROLE_RANK[org.role] < ROLE_RANK.manager) redirect("/403");
-  return <FilasClient />;
+  const platformAdmin = user.is_platform_admin && !user.support;
+  if (!platformAdmin && ROLE_RANK[org.role] < ROLE_RANK.agent) redirect("/403");
+  return <FilasClient canManage={platformAdmin || ROLE_RANK[org.role] >= ROLE_RANK.manager} />;
 }

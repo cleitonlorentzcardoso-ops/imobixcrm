@@ -7,6 +7,7 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
 import { requireRole } from "@/lib/auth/require-role";
 import { transferConversationToQueueSchema, validateRequest } from "@/lib/schemas";
 import { createClient } from "@/lib/supabase/server";
+import { registrarTrocaDeComando } from "@/lib/inbox/atividade-de-comando";
 
 export const dynamic = "force-dynamic";
 interface RouteCtx { params: Promise<{ id: string }> }
@@ -30,6 +31,16 @@ export async function POST(req: NextRequest, ctx: RouteCtx): Promise<Response> {
   });
   if (error) return fail("unprocessable_entity", error.message, 422, { requestId });
   if (!data) return fail("not_found", "Conversa não encontrada.", 404, { requestId });
-  await audit({ action: "conversation.sent_to_queue", actorUserId: authz.user.id, organizationId: authz.org.orgId, resourceType: "conversation", resourceId: id, requestId, metadata: { queue_id: input.queue_id, ...(input.reason ? { note: input.reason } : {}) } });
+  await audit({ action: "conversation.sent_to_queue", actorUserId: authz.user.id,
+    organizationId: authz.org.orgId, resourceType: "conversation", resourceId: id,
+    requestId, metadata: { queue_id: input.queue_id } });
+  await registrarTrocaDeComando({
+    supabase, organizationId: authz.org.orgId, conversationId: id,
+    contactId: data.contact_id, tipo: "conversation_transferred",
+    actor: { type: "user", id: authz.user.id, role: authz.org.role },
+    motivo: input.reason?.trim() ? `Enviou a conversa para outra fila: ${input.reason.trim()}`
+      : "Enviou a conversa para outra fila",
+    payload: { queue_id: input.queue_id },
+  });
   return ok(data, { requestId });
 }

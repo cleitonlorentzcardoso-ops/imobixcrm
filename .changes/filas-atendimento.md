@@ -1,6 +1,7 @@
 ---
-type: capacidade_nova
-area: atendimento
+impacto: capacidade_nova
+secao: adicionado
+titulo: Filas de atendimento por campanha
 ---
 
-Filas nomeadas chegam ao CRM: gestores podem criar filas como Locação e Vendas, definir uma fila de entrada padrão e encaminhar uma conversa para outra fila. Quando um atendente assume, a conversa sai da fila e aparece em Minhas.
+Filas nomeadas chegam ao CRM: gestores podem criar filas para campanhas, vincular atendentes e encaminhar conversas. Quando um atendente assume, a conversa sai da fila e aparece em Minhas. Leads sem campanha configurada continuam na fila geral.

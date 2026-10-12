@@ -57,7 +57,7 @@ const INBOX_TABS: { value: InboxTab; label: string }[] = [
   { value: "ai", label: "Automático" },
   // A gestão de FILAS tem área própria. Aqui sobra a visão operacional de tudo
   // que ainda está sem responsável, inclusive instalações que não criaram fila.
-  { value: "unassigned", label: "Aguardando" },
+  { value: "unassigned", label: "Fila" },
   { value: "mine", label: "Minhas" },
   { value: "all", label: "Todas" },
   { value: "closed", label: "Fechadas" },
