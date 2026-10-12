@@ -11,6 +11,7 @@ import * as React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const mutate = vi.fn();
 const lista: { sessoes: unknown[] } = { sessoes: [] };
@@ -28,6 +29,9 @@ vi.mock("@/hooks/inbox/useAssignableMembers", () => ({
 }));
 vi.mock("@/hooks/inbox/useTransferConversation", () => ({
   useTransferConversation: () => ({ mutate: vi.fn(), isPending: false }),
+}));
+vi.mock("@/hooks/inbox/useTransferConversationToQueue", () => ({
+  useTransferConversationToQueue: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 vi.mock("@/hooks/auth/AuthProvider", () => ({ useAuth: () => ({ user: { id: "eu" } }) }));
 
@@ -68,14 +72,17 @@ const sessao = (id: string, status: string, phone: string | null = `5571${id}`) 
 
 function montar(contactPhone: string | null = "5571988887777") {
   const onAbrirConversa = vi.fn();
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
-    <NumeroForaDoAr
-      conversationId="conv-a"
-      channelSessionId="a"
-      contactId="contato-1"
-      contactPhone={contactPhone}
-      onAbrirConversa={onAbrirConversa}
-    />,
+    <QueryClientProvider client={queryClient}>
+      <NumeroForaDoAr
+        conversationId="conv-a"
+        channelSessionId="a"
+        contactId="contato-1"
+        contactPhone={contactPhone}
+        onAbrirConversa={onAbrirConversa}
+      />
+    </QueryClientProvider>,
   );
   return onAbrirConversa;
 }

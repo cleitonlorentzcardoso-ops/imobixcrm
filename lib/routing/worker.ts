@@ -34,6 +34,7 @@ export type RoutingOutcome =
   | "skipped_conv_missing"
   | "skipped_invalid_payload"
   | "skipped_contato_pessoal"
+  | "skipped_service_queue"
   | "assign_lost_race"
   | "error";
 
@@ -63,6 +64,7 @@ const EMPTY_OUTCOMES = (): Record<RoutingOutcome, number> => ({
   skipped_conv_missing: 0,
   skipped_invalid_payload: 0,
   skipped_contato_pessoal: 0,
+  skipped_service_queue: 0,
   assign_lost_race: 0,
   error: 0,
 });
@@ -145,7 +147,7 @@ async function processEvent(event: EventRow, now: Date): Promise<RoutingOutcome>
 
   const { data: conv, error: convError } = await admin
     .from("conversations")
-    .select("id, organization_id, contact_id, channel_session_id, assigned_to_user_id, status")
+    .select("id, organization_id, contact_id, channel_session_id, assigned_to_user_id, service_queue_id, status")
     .eq("id", conversationId)
     .eq("organization_id", orgId)
     .maybeSingle();
@@ -154,6 +156,13 @@ async function processEvent(event: EventRow, now: Date): Promise<RoutingOutcome>
   if (!conv || !["open", "pending", "claimed", "ai_handling"].includes(conv.status)) {
     await markDone(event, "skipped_conv_missing");
     return "skipped_conv_missing";
+  }
+
+  // Uma regra de campanha já escolheu a fila humana. O rodízio geral não pode
+  // retirar dela o lead nem atribuí-lo a alguém fora dos membros da fila.
+  if (conv.service_queue_id) {
+    await markDone(event, "skipped_service_queue");
+    return "skipped_service_queue";
   }
 
   // Contato pessoal não distribui (spec 21, caminho 9): depois da leitura da

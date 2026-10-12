@@ -67,6 +67,18 @@ const ANON_PERMITIDO: readonly Excecao[] = [];
  */
 const AUTHENTICATED_PERMITIDO: readonly Excecao[] = [
   {
+    fn: "fn_create_service_queue(uuid,text,text,uuid[],text[])",
+    razao: "POST app/api/v1/service-queues/route.ts usa createClient de sessão. A definer exige fn_role_at_least na organização indicada com papel manager, e só insere membros daquela organização; a FK composta prende regras à fila da mesma empresa.",
+  },
+  {
+    fn: "fn_update_service_queue(uuid,uuid,text,text,uuid[],text[])",
+    razao: "PATCH app/api/v1/service-queues/[id]/route.ts usa createClient de sessão. A definer exige manager na organização e filtra a fila por id + organization_id antes de alterar membros e IDs de campanha; FK composta mantém o isolamento.",
+  },
+  {
+    fn: "fn_conversation_send_to_queue(uuid,uuid,uuid)",
+    razao: "POST app/api/v1/conversations/[id]/transfer-to-queue/route.ts usa createClient de sessão. A definer exige agent da organização, fila e conversa com organization_id igual ao parâmetro, e só o atendente atual ou manager pode transferir; tests/invariants/filas-de-atendimento-isolamento.test.ts rejeita fila de outra empresa.",
+  },
+  {
     fn: "encrypt_cpf(text)",
     razao:
       "POST/PATCH app/api/v1/contacts/route.ts e app/api/v1/contacts/[id]/route.ts, " +

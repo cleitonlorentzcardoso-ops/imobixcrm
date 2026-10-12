@@ -75,6 +75,9 @@ interface Excecao {
  * linhas da OUTRA organização, não uma leitura como superusuário.
  */
 const PROVA_PROPRIA: readonly Excecao[] = [
+  { tabela: "service_queues", razao: "tests/invariants/filas-de-atendimento-isolamento.test.ts — dois tenants com membros reais: countAs com JWT prova leitura local e zero da outra organização nos dois sentidos." },
+  { tabela: "service_queue_members", razao: "tests/invariants/filas-de-atendimento-isolamento.test.ts — vínculos reais em dois tenants, countAs com JWT lê o próprio e zero do vizinho nos dois sentidos." },
+  { tabela: "service_queue_campaign_rules", razao: "tests/invariants/filas-de-atendimento-isolamento.test.ts — IDs de campanha reais em dois tenants, countAs com JWT lê o próprio e zero do vizinho nos dois sentidos." },
   { tabela: "jev_router_decisions", razao: "tests/invariants/jev-roteador-decisoes.test.ts — dois tenants por JWT: leitura local, zero do vizinho; anon sem leitura, authenticated sem escrita; poda com piso no banco." },
   { tabela: "golden_candidates", razao: "tests/invariants/golden-candidates.test.ts — dois tenants reais por JWT (agent): leitura positiva local e ZERO do vizinho nos dois sentidos, a tabela inteira sem filtro igual à própria, anon recusado, e insert/update/delete de authenticated sem efeito (só o servidor grava)." },
   { tabela: "jev_observacoes", razao: "tests/invariants/jev-observacoes.test.ts — dois tenants reais por JWT (agent): leitura positiva local e ZERO do vizinho nos dois sentidos, a tabela inteira sem filtro igual à própria, anon recusado, e insert/update/delete de authenticated sem efeito (só o servidor grava)." },

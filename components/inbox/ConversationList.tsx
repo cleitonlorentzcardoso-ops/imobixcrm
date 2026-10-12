@@ -76,7 +76,10 @@ export function ConversationList({
     [q.data],
   );
   const toggleBulk = (id: string) => setBulkIds((current) => {
-    const next = new Set(current); next.has(id) ? next.delete(id) : next.add(id); return next;
+    const next = new Set(current);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    return next;
   });
   const selectAllLoaded = () => setBulkIds(new Set(items.map((item) => item.id)));
   async function applyBulk(status: "closed" | "archived") {

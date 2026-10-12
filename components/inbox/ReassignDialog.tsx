@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useT } from "@/hooks/i18n/useT";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,9 +26,11 @@ import { channelLabel, useChannelSessions } from "@/hooks/channels/useChannelSes
 import { useAssignableMembers } from "@/hooks/inbox/useAssignableMembers";
 import { useContinuarPorOutroNumero } from "@/hooks/inbox/useContinuarPorOutroNumero";
 import { useTransferConversation } from "@/hooks/inbox/useTransferConversation";
+import { useTransferConversationToQueue } from "@/hooks/inbox/useTransferConversationToQueue";
+import { apiClient } from "@/lib/api/client";
 import { outrosNumerosDoContato } from "@/lib/inbox/outros-numeros";
 
-export type AbaDeTransferencia = "atendente" | "numero";
+export type AbaDeTransferencia = "atendente" | "numero" | "fila";
 
 interface Props {
   conversationId: string;
@@ -76,23 +79,29 @@ export function ReassignDialog({
   const { user } = useAuth();
   const members = useAssignableMembers(open);
   const transfer = useTransferConversation();
+  const transferToQueue = useTransferConversationToQueue();
+  const filas = useQuery({ queryKey: ["service-queues"], enabled: open, queryFn: () => apiClient.get<{ data: Array<{ id: string; name: string }> }>("/api/v1/service-queues").then((r) => r.data) });
   const continuar = useContinuarPorOutroNumero();
   const { data: sessoes } = useChannelSessions({ enabled: open && numero != null });
   const [toUserId, setToUserId] = useState<string>("");
   const [reason, setReason] = useState("");
   const [aba, setAba] = useState<AbaDeTransferencia>(abaInicial);
   const [paraSessao, setParaSessao] = useState<string>("");
+  const [paraFila, setParaFila] = useState<string>("");
 
   const options = (members.data ?? []).filter((m) => m.user_id !== user.id);
   const numeros = numero ? outrosNumerosDoContato(sessoes, numero.channelSessionId) : [];
   const temAbaNumero = numero != null && numeros.length > 0;
-  const abaAtual = temAbaNumero ? aba : "atendente";
+  const temAbaFila = (filas.data ?? []).length > 0;
+  const abaAtual = aba === "fila" && temAbaFila ? "fila" : aba === "numero" && temAbaNumero ? "numero" : "atendente";
+  const quantidadeDeAbas = 1 + Number(temAbaFila) + Number(temAbaNumero);
 
   function close(v: boolean) {
     if (!v) {
       setToUserId("");
       setReason("");
       setParaSessao("");
+      setParaFila("");
       setAba(abaInicial);
     }
     onOpenChange(v);
@@ -123,18 +132,23 @@ export function ReassignDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {temAbaNumero && (
+        {(temAbaNumero || temAbaFila) && (
           <Tabs value={abaAtual} onValueChange={(v) => setAba(v as AbaDeTransferencia)}>
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className={`grid w-full ${quantidadeDeAbas === 3 ? "grid-cols-3" : "grid-cols-2"}`}>
               <TabsTrigger value="atendente">{t("Atendente")}</TabsTrigger>
-              <TabsTrigger value="numero" data-testid="aba-transferir-numero">
-                {t("Número")}
-              </TabsTrigger>
+              {temAbaFila && <TabsTrigger value="fila">{t("Fila")}</TabsTrigger>}
+              {temAbaNumero && <TabsTrigger value="numero" data-testid="aba-transferir-numero">{t("Número")}</TabsTrigger>}
             </TabsList>
           </Tabs>
         )}
 
-        {abaAtual === "numero" && numero ? (
+        {abaAtual === "fila" ? (
+          <div className="space-y-4">
+            <div className="space-y-1.5"><Label htmlFor="reassign-queue">{t("Enviar para a fila")}</Label><Select value={paraFila} onValueChange={setParaFila}><SelectTrigger id="reassign-queue" className="w-full"><SelectValue placeholder={filas.isLoading ? t("Carregando filas…") : t("Escolha a fila")} /></SelectTrigger><SelectContent>{(filas.data ?? []).map((fila) => <SelectItem key={fila.id} value={fila.id}>{fila.name}</SelectItem>)}</SelectContent></Select></div>
+            <div className="space-y-1.5"><Label htmlFor="reassign-queue-reason">{t("Motivo (opcional)")}</Label><Textarea id="reassign-queue-reason" value={reason} onChange={(e) => setReason(e.target.value)} maxLength={500} rows={2} /></div>
+            <p className="text-xs text-muted-foreground">{t("A conversa deixa de ser sua e volta a aguardar alguém da fila escolhida assumir.")}</p>
+          </div>
+        ) : abaAtual === "numero" && numero ? (
           <div className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="reassign-numero">{t("Continuar pelo número")}</Label>
@@ -212,7 +226,9 @@ export function ReassignDialog({
           <Button variant="ghost" onClick={() => close(false)}>
             {t("Cancelar")}
           </Button>
-          {abaAtual === "numero" ? (
+          {abaAtual === "fila" ? (
+            <Button disabled={!paraFila || transferToQueue.isPending} onClick={() => transferToQueue.mutate({ conversationId, queueId: paraFila, reason: reason.trim() || undefined }, { onSuccess: () => close(false) })}>{transferToQueue.isPending ? t("Enviando…") : t("Enviar para fila")}</Button>
+          ) : abaAtual === "numero" ? (
             <Button
               disabled={!paraSessao || !numero?.contactPhone || continuar.isPending}
               onClick={continuarPeloNumero}

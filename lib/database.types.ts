@@ -34,6 +34,31 @@ export type Database = {
   }
   public: {
     Tables: {
+      service_queues: {
+        Row: { id: string; organization_id: string; name: string; description: string | null; active: boolean; created_by_user_id: string | null; created_at: string; updated_at: string }
+        Insert: { id?: string; organization_id: string; name: string; description?: string | null; active?: boolean; created_by_user_id?: string | null; created_at?: string; updated_at?: string }
+        Update: { id?: string; organization_id?: string; name?: string; description?: string | null; active?: boolean; created_by_user_id?: string | null; created_at?: string; updated_at?: string }
+        Relationships: [
+          { foreignKeyName: "service_queues_organization_id_fkey"; columns: ["organization_id"]; isOneToOne: false; referencedRelation: "organizations"; referencedColumns: ["id"] },
+        ]
+      }
+      service_queue_members: {
+        Row: { organization_id: string; queue_id: string; user_id: string; created_at: string }
+        Insert: { organization_id: string; queue_id: string; user_id: string; created_at?: string }
+        Update: { organization_id?: string; queue_id?: string; user_id?: string; created_at?: string }
+        Relationships: [
+          { foreignKeyName: "service_queue_members_queue_id_organization_id_fkey"; columns: ["queue_id", "organization_id"]; isOneToOne: false; referencedRelation: "service_queues"; referencedColumns: ["id", "organization_id"] },
+          { foreignKeyName: "service_queue_members_user_id_organization_id_fkey"; columns: ["user_id", "organization_id"]; isOneToOne: false; referencedRelation: "user_organizations"; referencedColumns: ["user_id", "organization_id"] },
+        ]
+      }
+      service_queue_campaign_rules: {
+        Row: { organization_id: string; platform: string; campaign_id: string; queue_id: string; created_at: string }
+        Insert: { organization_id: string; platform?: string; campaign_id: string; queue_id: string; created_at?: string }
+        Update: { organization_id?: string; platform?: string; campaign_id?: string; queue_id?: string; created_at?: string }
+        Relationships: [
+          { foreignKeyName: "service_queue_campaign_rules_queue_id_organization_id_fkey"; columns: ["queue_id", "organization_id"]; isOneToOne: false; referencedRelation: "service_queues"; referencedColumns: ["id", "organization_id"] },
+        ]
+      }
       channel_integrations: {
         Row: { organization_id: string; profile_id: string; credential_encrypted: string; created_at: string; updated_at: string }
         Insert: { organization_id: string; profile_id: string; credential_encrypted: string; created_at?: string; updated_at?: string }
@@ -4888,6 +4913,7 @@ export type Database = {
           metadata: Json
           organization_id: string
           provider_conversation_id: string | null
+          service_queue_id: string | null
           rag_review_status: string | null
           service_closed_at: string | null
           service_revision: number
@@ -4932,6 +4958,7 @@ export type Database = {
           metadata?: Json
           organization_id: string
           provider_conversation_id?: string | null
+          service_queue_id?: string | null
           rag_review_status?: string | null
           service_closed_at?: string | null
           service_revision?: number
@@ -4976,6 +5003,7 @@ export type Database = {
           metadata?: Json
           organization_id?: string
           provider_conversation_id?: string | null
+          service_queue_id?: string | null
           rag_review_status?: string | null
           service_closed_at?: string | null
           service_revision?: number
@@ -5026,6 +5054,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_service_queue_id_fkey"
+            columns: ["service_queue_id"]
+            isOneToOne: false
+            referencedRelation: "service_queues"
             referencedColumns: ["id"]
           },
         ]
@@ -10290,6 +10325,22 @@ export type Database = {
       }
     }
     Functions: {
+      fn_create_service_queue: {
+        Args: { p_organization_id: string; p_name: string; p_description: string | null; p_member_ids: string[]; p_campaign_ids: string[] }
+        Returns: string
+      }
+      fn_update_service_queue: {
+        Args: { p_organization_id: string; p_queue_id: string; p_name: string; p_description: string | null; p_member_ids: string[]; p_campaign_ids: string[] }
+        Returns: undefined
+      }
+      fn_conversation_send_to_queue: {
+        Args: { p_organization_id: string; p_conversation_id: string; p_queue_id: string }
+        Returns: Database["public"]["Tables"]["conversations"]["Row"]
+      }
+      fn_resolve_campaign_service_queue: {
+        Args: { p_organization_id: string; p_contact_id: string }
+        Returns: string | null
+      }
       fn_authorize_ai_form_capture: {
         Args: { p_organization_id: string; p_source_id: string; p_lead_id: string; p_contact_id: string; p_request_id: string; p_ttl_ms: number }
         Returns: boolean

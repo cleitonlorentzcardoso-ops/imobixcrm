@@ -149,6 +149,14 @@ export const transferConversationSchema = z.object({
 
 export type TransferConversationInput = z.infer<typeof transferConversationSchema>;
 
+/** Devolver para uma fila é diferente de liberar para a fila geral: conserva o destino escolhido. */
+export const transferConversationToQueueSchema = z.object({
+  queue_id: z.string().uuid(),
+  reason: z.string().trim().min(1).max(500).optional(),
+});
+
+export type TransferConversationToQueueInput = z.infer<typeof transferConversationToQueueSchema>;
+
 export const updateConversationStatusSchema = z.object({
   status: conversationStatusSchema,
 });

@@ -251,7 +251,7 @@ export function ConversationListItem({
         <span
           aria-hidden="true"
           className={cn(
-            "mt-2 grid h-5 w-5 shrink-0 place-items-center rounded border text-xs",
+            "mt-2 grid h-5 w-5 shrink-0 place-items-center rounded-md border text-xs",
             isBulkSelected ? "border-accent bg-accent text-white" : "border-border",
           )}
         >

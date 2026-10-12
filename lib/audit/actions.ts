@@ -115,6 +115,10 @@ export const AUDIT_ACTIONS = [
   "conversation.created",
   "conversation.claimed",
   "conversation.transferred",
+  // A conversa saiu da responsabilidade de uma pessoa e voltou para uma fila
+  // nomeada. É diferente de transferir para outra pessoa: o próximo atendente
+  // ainda não foi escolhido.
+  "conversation.sent_to_queue",
   "conversation.released",
   "conversation.closed",
   // O arquivamento é terminal como o fechamento, e o evento é separado de
@@ -149,6 +153,10 @@ export const AUDIT_ACTIONS = [
   "ai.handoff_triggered",
   "ai.reactivated_by_agent",
   "conversation.usable_for_rag_toggled",
+  // A configuração da fila é uma decisão operacional: registra quem criou o
+  // destino que passará a receber leads novos.
+  "service_queue.created",
+  "service_queue.updated",
   "rag.conversations_batch_run",
   "lgpd.redact_received",
   "lgpd.data_request_received",
