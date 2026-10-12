@@ -547,8 +547,7 @@ export const NAV_CATALOG = [
     group: "ia",
     section: "Montar o agente",
     minRole: "manager",
-    // Configuração eventual: continua no hub de IA. O espaço diário do menu
-    // agora pertence às Filas de atendimento.
+    sidebar: true,
   },
   {
     // Os roteiros de atendimento (#1130, de @vgamkt): perguntas que a IA conduz
@@ -854,8 +853,7 @@ export const NAV_CATALOG = [
     icon: "ClockCounterClockwise",
     group: "analise",
     section: "Os números do período",
-    // Consulta periódica: continua no hub de Análise, sem empurrar Filas para
-    // fora da dobra em telas de 900px.
+    sidebar: true,
   },
   {
     // Observabilidade, não configuração: por isso não fica junto dos agentes.

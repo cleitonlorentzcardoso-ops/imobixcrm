@@ -233,15 +233,19 @@ export function SidebarContent({
         mais densidade raspada. A conta é fechada e vale conferir antes de abrir
         o PR: cada linha custa 32px (28px de altura + 4px de `space-y-1`), e
         trocar N destinos do menu por um único link de hub devolve (N-1)×32px.
+
+        Filas foi solicitado como grupo próprio entre Atendimento e CRM. Para
+        preservar todos os atalhos existentes, reduzimos apenas os intervalos
+        vazios entre grupos e itens; a altura clicável das linhas segue igual.
       */}
-      <nav className="flex-1 space-y-2 overflow-y-auto p-2" aria-label={t("Navegação principal")}>
+      <nav className="flex-1 space-y-1 overflow-y-auto p-2" aria-label={t("Navegação principal")}>
         {grupos.map(({ group, items }) => {
           const tituloId = `nav-grupo-${group.id}`;
           // Recolhido o sidebar inteiro (rail de 64px), o grupo sempre mostra
           // seus itens — não há onde desenhar cabeçalho nem seta para fechá-lo.
           const aberto = collapsed || !gruposFechados.has(group.id);
           return (
-            <div key={group.id} className="space-y-1">
+            <div key={group.id} className="space-y-0.5">
               {/* Colapsado, o sidebar tem 64px: seis rótulos ali seriam ilegíveis.
                   Vira um filete separador, que preserva o agrupamento sem texto. */}
               {collapsed ? (
@@ -271,7 +275,7 @@ export function SidebarContent({
                 <ul
                   aria-labelledby={collapsed ? undefined : tituloId}
                   aria-label={collapsed ? t(group.label) : undefined}
-                  className="space-y-1"
+                  className="space-y-0.5"
                 >
                   {items.map((item) => {
                     const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
