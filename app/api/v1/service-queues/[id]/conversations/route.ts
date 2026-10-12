@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import { z } from "zod";
 import { fail, ok } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
-import { ROLE_RANK } from "@/lib/auth/types";
+import { roleAtLeast } from "@/lib/auth/types";
 import { createClient } from "@/lib/supabase/server";
 import { idsDeContatosPessoais } from "@/app/api/v1/conversations/_handler";
 
@@ -24,7 +24,7 @@ export async function GET(req: NextRequest, ctx: RouteCtx): Promise<Response> {
     .eq("id", queueId).eq("organization_id", authz.org.orgId).eq("active", true).maybeSingle();
   if (queueError) return fail("internal_error", queueError.message, 500, { requestId });
   if (!queue) return fail("not_found", "Fila não encontrada.", 404, { requestId });
-  if (ROLE_RANK[authz.org.role] < ROLE_RANK.manager &&
+  if (!roleAtLeast(authz.org.role, "manager") &&
       !queue.service_queue_members.some((member) => member.user_id === authz.user.id)) {
     return fail("forbidden", "Você não faz parte desta fila.", 403, { requestId });
   }
