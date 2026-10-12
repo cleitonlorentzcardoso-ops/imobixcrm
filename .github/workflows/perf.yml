@@ -3,8 +3,14 @@ name: perf
 on:
   pull_request:
     branches: [main]
+    paths-ignore:
+      - "CHANGELOG.md"
+      - ".changes/**"
   push:
     branches: [main]
+    paths-ignore:
+      - "CHANGELOG.md"
+      - ".changes/**"
 
 # O GITHUB_TOKEN deste job serve a `actions/checkout` (clone) e a
 # `actions/setup-node` (manifest de `actions/node-versions`, repo público).

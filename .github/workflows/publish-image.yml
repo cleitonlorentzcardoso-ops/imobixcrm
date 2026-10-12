@@ -22,6 +22,11 @@ on:
   push:
     tags: ["v*"]
     branches: ["main"]
+    # Sem build duplicado de `latest` no commit que só corta o CHANGELOG.
+    # O filtro de caminhos não se aplica a tags: a imagem vX.Y.Z ainda é feita.
+    paths-ignore:
+      - "CHANGELOG.md"
+      - ".changes/**"
   # NÃO acrescente `release: types: [published]` aqui. Ele já esteve, e o efeito
   # foi medido na v1.3.0: `gh release create` empurra a tag E publica a release,
   # então o MESMO commit foi construído DUAS vezes, com 5 minutos de diferença.
@@ -51,6 +56,9 @@ on:
   # next 16.3 ele typecheca os `*.test.ts` colocados. O artefato que o
   # self-hoster instala era o único sem gate.
   pull_request:
+    paths-ignore:
+      - "CHANGELOG.md"
+      - ".changes/**"
   workflow_dispatch: {}
 
 env:
