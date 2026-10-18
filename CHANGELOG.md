@@ -8,6 +8,12 @@ Se você roda o DeskcommCRM numa VPS, **leia a seção da versão para a qual es
 
 ## [Não lançado]
 
+## [1.83.1] — 2026-10-18
+
+### Corrigido
+
+- **Tela de importação de etiquetas com tradução e nomes consistentes** A tela de importação de etiquetas passa a ter tradução em espanhol e usa o mesmo rótulo de contato do restante do CRM ao criar negócios, sem exibir identificadores técnicos como nomes.
+
 ## [1.83.0] — 2026-10-18
 
 ### Adicionado
@@ -11432,7 +11438,8 @@ Primeira versão marcada do DeskcommCRM. O projeto vinha sendo desenvolvido publ
 
 - **Node 22 é obrigatório para desenvolvimento.** A suíte de invariantes instancia o cliente do Supabase, que exige o `WebSocket` global — nativo apenas a partir do Node 22. Isso não afeta quem apenas hospeda: a VPS roda a imagem pronta.
 
-[Não lançado]: https://github.com/melgarafael/DeskcommCRM/compare/v1.83.0...HEAD
+[Não lançado]: https://github.com/melgarafael/DeskcommCRM/compare/v1.83.1...HEAD
+[1.83.1]: https://github.com/melgarafael/DeskcommCRM/compare/v1.83.0...v1.83.1
 [1.83.0]: https://github.com/melgarafael/DeskcommCRM/compare/v1.82.1...v1.83.0
 [1.82.1]: https://github.com/melgarafael/DeskcommCRM/compare/v1.82.0...v1.82.1
 [1.82.0]: https://github.com/melgarafael/DeskcommCRM/compare/v1.81.0...v1.82.0
