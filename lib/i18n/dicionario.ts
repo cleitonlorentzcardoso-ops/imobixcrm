@@ -15410,6 +15410,49 @@ export const DICIONARIO: Traducoes = {
   "Sem contato vinculado, a etiqueta não é aplicada.": {
     es: "Sin contacto vinculado, la etiqueta no se aplica.",
   },
+  // Importação manual das etiquetas do WhatsApp para etapas do funil.
+  "Importar etiquetas": { es: "Importar etiquetas" },
+  "Não consegui ler as etiquetas ou os funis deste número.": {
+    es: "No pude leer las etiquetas ni los embudos de este número.",
+  },
+  "Não consegui ler as colunas deste funil.": {
+    es: "No pude leer las columnas de este embudo.",
+  },
+  "A prévia falhou. Confira a conexão e tente novamente.": {
+    es: "Falló la vista previa. Comprueba la conexión e inténtalo de nuevo.",
+  },
+  "A importação parou. Os lotes concluídos foram mantidos; revise o resultado antes de repetir.": {
+    es: "La importación se detuvo. Los lotes completados se conservaron; revisa el resultado antes de repetirla.",
+  },
+  "Etiquetas do WhatsApp Business": { es: "Etiquetas de WhatsApp Business" },
+  "Escolha uma coluna para cada etiqueta. Primeiro confira a prévia; nada muda no WhatsApp.": {
+    es: "Elige una columna para cada etiqueta. Primero revisa la vista previa; nada cambia en WhatsApp.",
+  },
+  "Carregando etiquetas…": { es: "Cargando etiquetas…" },
+  "Nenhuma etiqueta encontrada neste número.": { es: "No se encontraron etiquetas en este número." },
+  "Não importar": { es: "No importar" },
+  "Coluna": { es: "Columna" },
+  "Escolha a coluna": { es: "Elige la columna" },
+  "contatos na prévia": { es: "contactos en la vista previa" },
+  "conversas etiquetadas para analisar": { es: "conversaciones etiquetadas para analizar" },
+  "contatos com mais de uma etiqueta escolhida serão ignorados para evitar destino ambíguo.": {
+    es: "Los contactos con más de una etiqueta seleccionada se omitirán para evitar un destino ambiguo.",
+  },
+  "criados": { es: "creados" },
+  "movidos": { es: "movidos" },
+  "etiquetados": { es: "etiquetados" },
+  "já corretos": { es: "ya correctos" },
+  "preservados por conflito com outro funil": { es: "conservados por conflicto con otro embudo" },
+  "não concluídos": { es: "no completados" },
+  "Negócios abertos em outro funil não serão movidos. Mensagens antigas não são importadas. Automações do CRM podem reagir à criação ou mudança de negócios.": {
+    es: "Los negocios abiertos en otro embudo no se moverán. Los mensajes antiguos no se importan. Las automatizaciones del CRM pueden reaccionar a la creación o al cambio de negocios.",
+  },
+  "Revisei minhas automações e estou ciente de que elas podem enviar mensagens aos clientes.": {
+    es: "Revisé mis automatizaciones y sé que pueden enviar mensajes a los clientes.",
+  },
+  "Conferir prévia": { es: "Revisar vista previa" },
+  "Processando…": { es: "Procesando…" },
+  "Importar para o CRM": { es: "Importar al CRM" },
 };
 
 /**
