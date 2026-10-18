@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Etiquetas do WhatsApp Business para o funil",
+    "subtitle": "prévia humana, importação manual e guarda de conflitos",
+    "output": "etiquetas-whatsapp-funil.html",
+    "quality_profile": "standard"
+  },
+  "lanes": [
+    { "id": "canal", "label": "Canal" },
+    { "id": "tela", "label": "Operador" },
+    { "id": "motor", "label": "Motor" },
+    { "id": "dados", "label": "CRM" }
+  ],
+  "mainPath": ["etiquetas", "mapeamento", "plano", "importador", "lead", "kanban"],
+  "nodes": [
+    {
+      "id": "etiquetas",
+      "lane": "canal",
+      "col": 1,
+      "type": "cloud",
+      "label": "Etiquetas e chats",
+      "sublabel": "leitura pelo adapter, sem escrita no WhatsApp"
+    },
+    {
+      "id": "mapeamento",
+      "lane": "tela",
+      "col": 2,
+      "type": "frontend",
+      "label": "Conexões › Importar etiquetas",
+      "sublabel": "coluna por etiqueta; prévia e confirmação"
+    },
+    {
+      "id": "plano",
+      "lane": "motor",
+      "col": 3,
+      "type": "backend",
+      "label": "planLabelImport",
+      "sublabel": "organização, etapas abertas, conflitos"
+    },
+    {
+      "id": "importador",
+      "lane": "motor",
+      "col": 4,
+      "type": "backend",
+      "label": "importLabelBatch",
+      "sublabel": "20 contatos por pedido, reexecução segura"
+    },
+    {
+      "id": "contato",
+      "lane": "dados",
+      "col": 5,
+      "type": "database",
+      "label": "contacts",
+      "sublabel": "identidade WhatsApp por organização"
+    },
+    {
+      "id": "lead",
+      "lane": "dados",
+      "col": 5,
+      "type": "database",
+      "label": "crm_leads",
+      "sublabel": "cria, move e acrescenta a etiqueta"
+    },
+    {
+      "id": "atividade",
+      "lane": "dados",
+      "col": 6,
+      "type": "database",
+      "label": "crm_lead_activities",
+      "sublabel": "handlers da casa registram as mutações"
+    },
+    {
+      "id": "kanban",
+      "lane": "tela",
+      "col": 7,
+      "type": "frontend",
+      "label": "Funil e timeline",
+      "sublabel": "resultado visível ao corretor"
+    }
+  ],
+  "edges": [
+    { "from": "etiquetas", "to": "plano", "label": "lista e membros de cada etiqueta" },
+    { "from": "mapeamento", "to": "plano", "label": "destino escolhido" },
+    { "from": "plano", "to": "mapeamento", "label": "prévia e conflitos" },
+    { "from": "plano", "to": "importador", "label": "plano confirmado" },
+    { "from": "importador", "to": "contato", "label": "upsert atômico" },
+    { "from": "contato", "to": "lead", "label": "vínculo do negócio" },
+    { "from": "importador", "to": "lead", "label": "handlers de criar, mover e etiquetar" },
+    { "from": "lead", "to": "atividade", "label": "atividade auditável" },
+    { "from": "atividade", "to": "kanban", "label": "linha do tempo" },
+    { "from": "lead", "to": "kanban", "label": "coluna atual" },
+    { "from": "importador", "to": "mapeamento", "label": "contadores de sucesso e falha" }
+  ]
+}
