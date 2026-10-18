@@ -5,6 +5,7 @@ import { createLeadHandler, moveLeadHandler, updateLeadHandler } from "@/app/api
 import type { HandlerCtx } from "@/lib/api/handlers/types";
 import { getAdapter } from "@/lib/channels";
 import { ORIGEM_DO_WHATSAPP } from "@/lib/channels/origem-do-negocio";
+import { rotuloDoContato } from "@/lib/contacts/rotulo-do-contato";
 import {
   CHANNEL_SESSION_REF_COLUMNS,
   resolveSessionRef,
@@ -172,7 +173,7 @@ export async function importLabelBatch(
       const id = String(contactId);
       const { data: person, error: personError } = await admin
         .from("contacts")
-        .select("id, display_name, is_anonymized, is_merged_into")
+        .select("id, name, display_name, phone_number, is_anonymized, is_merged_into")
         .eq("organization_id", org)
         .eq("id", id)
         .maybeSingle();
@@ -216,16 +217,11 @@ export async function importLabelBatch(
         } else if (existing.stage_id === mapping.stage_id) result.unchanged++;
         continue;
       }
-      const name = (
-        person.display_name ||
-        contact.name ||
-        contact.identity.phone ||
-        "Contato do WhatsApp"
-      ).slice(0, 180);
+      const name = rotuloDoContato(person).slice(0, 180);
       await createLeadHandler(admin, ctx, {
         pipeline_id: mapping.pipeline_id,
         stage_id: mapping.stage_id,
-        title: name.length >= 2 ? name : "Contato do WhatsApp",
+        title: name,
         contact_id: id,
         tags: [label.name],
         source: ORIGEM_DO_WHATSAPP.source,

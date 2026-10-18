@@ -50,7 +50,7 @@ export function LabelImportSheet({
 }) {
   const t = useT();
   const [labels, setLabels] = useState<Label[]>([]);
-  const [pipelines, setPipelines] = useState<Pipeline[]>([]);
+  const [funis, setFunis] = useState<Pipeline[]>([]);
   const [stages, setStages] = useState<Record<string, Stage[]>>({});
   const [choices, setChoices] = useState<Record<string, { pipeline_id: string; stage_id: string }>>(
     {},
@@ -72,7 +72,7 @@ export function LabelImportSheet({
       .then(([labelResponse, pipelineResponse]) => {
         if (!mounted) return;
         setLabels(labelResponse.data);
-        setPipelines(pipelineResponse.data);
+        setFunis(pipelineResponse.data);
       })
       .catch(() => {
         if (mounted) setError(t("Não consegui ler as etiquetas ou os funis deste número."));
@@ -229,7 +229,7 @@ export function LabelImportSheet({
                   onChange={(event) => choosePipeline(label.id, event.target.value)}
                 >
                   <option value="">{t("Não importar")}</option>
-                  {pipelines.map((pipeline) => (
+                  {funis.map((pipeline) => (
                     <option key={pipeline.id} value={pipeline.id}>
                       {pipeline.name}
                     </option>
