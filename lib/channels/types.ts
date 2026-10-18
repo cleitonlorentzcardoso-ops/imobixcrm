@@ -96,6 +96,20 @@ export interface ChannelGroup {
   subject: string | null;
 }
 
+/** Etiqueta lida do canal; o CRM nunca a altera durante a importação. */
+export interface ChannelLabel {
+  id: string;
+  name: string;
+  colorHex: string | null;
+}
+
+/** Identidade normalizada pelo adapter, sem expor JIDs ao módulo de negócios. */
+export interface ChannelLabeledContact {
+  identity: { kind: "phone" | "lid"; phone: string | null; lid: string | null };
+  chatId: string;
+  name: string | null;
+}
+
 /**
  * A organização em nome de quem a operação de canal acontece.
  *
@@ -414,6 +428,10 @@ export interface ChannelAdapter {
 
   /** Grupos do número. Ausente = o canal não lista grupos. */
   listGroups?(input: { sessionRef: string }): Promise<ChannelGroup[]>;
+
+  /** Leitura das etiquetas e dos contatos associados; ausência = canal sem suporte. */
+  listLabels?(input: { sessionRef: string }): Promise<ChannelLabel[]>;
+  listLabeledContacts?(input: { sessionRef: string; labelId: string }): Promise<ChannelLabeledContact[]>;
 
   /** Liga/desliga o recebimento de grupos na sessão; `true` só com a troca confirmada. */
   setGroupIntake?(input: { sessionRef: string; receive: boolean }): Promise<boolean>;

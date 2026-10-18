@@ -566,6 +566,54 @@ export class WahaClient {
     return grupos;
   }
 
+  /** Etiquetas do WhatsApp Business (somente leitura). Resposta inválida falha alto. */
+  async listarEtiquetas(session: string): Promise<Array<{ id: string; name: string; colorHex: string | null }>> {
+    const res = await this.fetchComTeto(`${this.baseUrl}/api/${encodeURIComponent(session)}/labels`, {
+      headers: { "X-Api-Key": this.apiKey },
+    });
+    if (!res.ok) throw new Error(`waha_labels_${res.status}`);
+    const body: unknown = await res.json();
+    if (!Array.isArray(body)) throw new Error("waha_labels_invalid_response");
+    return body.map((item) => {
+      if (!item || typeof item !== "object") throw new Error("waha_labels_invalid_response");
+      const row = item as Record<string, unknown>;
+      if (typeof row.id !== "string" || typeof row.name !== "string") {
+        throw new Error("waha_labels_invalid_response");
+      }
+      return { id: row.id, name: row.name, colorHex: typeof row.colorHex === "string" && /^#[0-9a-f]{6}$/i.test(row.colorHex) ? row.colorHex : null };
+    });
+  }
+
+  /** O formato de chats varia por engine; normalizamos apenas IDs reconhecíveis. */
+  async listarChatsDaEtiqueta(session: string, labelId: string): Promise<Array<{ chatId: string; name: string | null }>> {
+    const url = `${this.baseUrl}/api/${encodeURIComponent(session)}/labels/${encodeURIComponent(labelId)}/chats`;
+    const res = await this.fetchComTeto(url, { headers: { "X-Api-Key": this.apiKey } });
+    if (!res.ok) throw new Error(`waha_label_chats_${res.status}`);
+    const body: unknown = await res.json();
+    const entries: Array<[string | null, unknown]> = Array.isArray(body)
+      ? body.map((item) => [null, item])
+      : body && typeof body === "object" && !Array.isArray(body)
+        ? Object.entries(body as Record<string, unknown>).map(([key, value]) => [key, value])
+        : [];
+    if (!Array.isArray(body) && (!body || typeof body !== "object")) throw new Error("waha_label_chats_invalid_response");
+    return entries.map(([key, item]) => {
+      if (typeof item === "string") return { chatId: item, name: null };
+      if (!item || typeof item !== "object") throw new Error("waha_label_chats_invalid_response");
+      const row = item as Record<string, unknown>;
+      const id = row.id;
+      const chatId = typeof id === "string" ? id
+        : id && typeof id === "object" && typeof (id as Record<string, unknown>)._serialized === "string"
+          ? String((id as Record<string, unknown>)._serialized)
+          : typeof row.chatId === "string" ? row.chatId
+            : key && key.includes("@") ? key : null;
+      if (!chatId) throw new Error("waha_label_chats_invalid_response");
+      const name = typeof row.name === "string" ? row.name
+        : typeof row.pushname === "string" ? row.pushname
+          : typeof row.pushName === "string" ? row.pushName : null;
+      return { chatId, name };
+    });
+  }
+
   /**
    * Liga ou desliga o recebimento de grupos NESTA sessão. Só devolve `true` quando o GET
    * seguinte confirma a troca: o WAHA já respondeu 200 para operação que não aconteceu

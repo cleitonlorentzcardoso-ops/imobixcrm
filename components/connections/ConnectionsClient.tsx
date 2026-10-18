@@ -27,6 +27,7 @@ import type { ChannelProvider } from "@/lib/channels/capabilities";
 import { usePacingKnobs } from "@/hooks/channels/usePacingKnobs";
 import { AntiBanSheet } from "./AntiBanSheet";
 import { GruposSheet } from "./GruposSheet";
+import { LabelImportSheet } from "./LabelImportSheet";
 import { PairingOptions } from "./PairingOptions";
 import { ChannelAcervo } from "./ChannelAcervo";
 import { ChannelAiAccess } from "./ChannelAiAccess";
@@ -221,6 +222,7 @@ export function ConnectionsClient({ wahaConfigured }: { wahaConfigured: boolean 
   const [qr, setQr] = useState<{ sessionId: string; title: string } | null>(null);
   const [antiBanId, setAntiBanId] = useState<string | null>(null);
   const [gruposId, setGruposId] = useState<string | null>(null);
+  const [labelsId, setLabelsId] = useState<string | null>(null);
   const [toDelete, setToDelete] = useState<ChannelSession | null>(null);
   const pacingItems = usePacingKnobs().data?.items ?? [];
 
@@ -648,6 +650,11 @@ export function ConnectionsClient({ wahaConfigured }: { wahaConfigured: boolean 
                       {t("Grupos")}
                     </Button>
                   )}
+                  {dependeDoTransporte(c) && (
+                    <Button variant="outline" size="sm" disabled={!wahaConfigured} onClick={() => setLabelsId(c.id)}>
+                      {t("Importar etiquetas")}
+                    </Button>
+                  )}
                   <Button
                     variant="outline"
                     size="sm"
@@ -684,6 +691,7 @@ export function ConnectionsClient({ wahaConfigured }: { wahaConfigured: boolean 
           o mesmo motivo por trás do `canWrite` fixo do `AntiBanSheet` acima. A
           rota `groups` também exige `manager+` do lado do servidor. */}
       {gruposId !== null && <GruposSheet channelId={gruposId} onClose={() => setGruposId(null)} />}
+      {labelsId !== null && <LabelImportSheet channelId={labelsId} onClose={() => setLabelsId(null)} />}
 
       {toDelete && (
         <ExcluirCanalDialog
