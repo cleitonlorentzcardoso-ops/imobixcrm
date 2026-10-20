@@ -15412,6 +15412,23 @@ export const DICIONARIO: Traducoes = {
   },
   // Importação manual das etiquetas do WhatsApp para etapas do funil.
   "Importar etiquetas": { es: "Importar etiquetas" },
+  "O arquivo de etiquetas é grande demais para esta importação.": {
+    es: "El archivo de etiquetas es demasiado grande para esta importación.",
+  },
+  "Não consegui ler esse arquivo de etiquetas. Gere um novo arquivo e tente novamente.": {
+    es: "No pude leer este archivo de etiquetas. Genera uno nuevo e inténtalo de nuevo.",
+  },
+  "Se as etiquetas deste número não aparecerem, use um arquivo exportado do mesmo WhatsApp.": {
+    es: "Si no aparecen las etiquetas de este número, usa un archivo exportado del mismo WhatsApp.",
+  },
+  "Arquivo de etiquetas": { es: "Archivo de etiquetas" },
+  "Escolher arquivo de etiquetas": { es: "Elegir archivo de etiquetas" },
+  "Arquivo carregado:": { es: "Archivo cargado:" },
+  "etiquetas": { es: "etiquetas" },
+  "Confira os destinos antes de importar.": { es: "Revisa los destinos antes de importar." },
+  "A conexão não entregou as etiquetas. Você pode usar um arquivo exportado deste número.": {
+    es: "La conexión no proporcionó las etiquetas. Puedes usar un archivo exportado de este número.",
+  },
   "Não consegui ler as etiquetas ou os funis deste número.": {
     es: "No pude leer las etiquetas ni los embudos de este número.",
   },

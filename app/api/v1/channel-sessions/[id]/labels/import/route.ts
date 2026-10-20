@@ -110,6 +110,7 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<Respons
   );
   if (!id.success || !parsed.success)
     return fail("validation_error", "Confira o mapeamento das etiquetas.", 400, { requestId });
+  const channelSessionId = id.data;
   if (parsed.data.mode === "apply") {
     const denied = await requireSupportWrite();
     if (denied) return denied;
@@ -119,7 +120,7 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<Respons
     const plan = await planLabelImport(
       admin,
       authz.org.orgId,
-      id.data,
+      channelSessionId,
       parsed.data.mappings,
       parsed.data.snapshot,
     );
@@ -149,14 +150,14 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<Respons
       },
       plan.assignments,
       parsed.data.after ?? null,
-      id.data,
+      channelSessionId,
     );
     await audit({
       organizationId: authz.org.orgId,
       actorUserId: authz.user.id,
       action: "lead.imported",
       resourceType: "channel_sessions",
-      resourceId: id.data,
+      resourceId: channelSessionId,
       requestId,
       metadata: {
         source: parsed.data.snapshot ? "operator_snapshot" : "connected_channel",
