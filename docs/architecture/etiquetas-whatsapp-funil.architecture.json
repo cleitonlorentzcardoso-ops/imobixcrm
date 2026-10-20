@@ -3,7 +3,7 @@
   "diagram_type": "architecture",
   "meta": {
     "title": "Etiquetas do WhatsApp Business para o funil",
-    "subtitle": "prévia humana, importação manual e guarda de conflitos",
+    "subtitle": "leitura direta ou acervo exportado; prévia humana e guarda de conflitos",
     "output": "etiquetas-whatsapp-funil.html",
     "quality_profile": "standard"
   },
@@ -22,6 +22,14 @@
       "type": "cloud",
       "label": "Etiquetas e chats",
       "sublabel": "leitura pelo adapter, sem escrita no WhatsApp"
+    },
+    {
+      "id": "acervo",
+      "lane": "canal",
+      "col": 1,
+      "type": "database",
+      "label": "Acervo exportado",
+      "sublabel": "alternativa quando o motor conectado não sincroniza etiquetas"
     },
     {
       "id": "mapeamento",
@@ -82,6 +90,8 @@
   ],
   "edges": [
     { "from": "etiquetas", "to": "plano", "label": "lista e membros de cada etiqueta" },
+    { "from": "acervo", "to": "mapeamento", "label": "arquivo local do mesmo número" },
+    { "from": "mapeamento", "to": "acervo", "label": "confirmação da fonte na tela" },
     { "from": "mapeamento", "to": "plano", "label": "destino escolhido" },
     { "from": "plano", "to": "mapeamento", "label": "prévia e conflitos" },
     { "from": "plano", "to": "importador", "label": "plano confirmado" },

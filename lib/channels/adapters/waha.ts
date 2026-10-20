@@ -8,7 +8,7 @@
 import { wahaContactPayload } from "@/lib/waha/contact-card";
 import { fetchWahaMedia } from "@/lib/messaging/media/waha-source";
 import { getWahaClient } from "@/lib/waha/client";
-import { canonicalPhoneBR } from "@/lib/channels/phone-variants";
+import { normalizarContatosEtiquetados } from "@/lib/channels/label-contacts";
 import { wahaSendPlanFor } from "@/lib/waha/media-send";
 import {
   resolveCanonicalCusChatId,
@@ -25,7 +25,7 @@ import {
 import { resolveWahaChatId } from "@/lib/waha/send";
 import type { FetchedMedia } from "@/lib/messaging/media/types";
 import { DETALHE_CREDENCIAL_RECUSADA } from "../health";
-import type { ChannelAdapter, ChannelHealth, ChannelLabeledContact, OutboundEnvelope, RecipientInput } from "../types";
+import type { ChannelAdapter, ChannelHealth, OutboundEnvelope, RecipientInput } from "../types";
 
 /**
  * O HTTP que o WAHA devolveu, lido do PREFIXO da mensagem de erro.
@@ -147,7 +147,10 @@ export const wahaAdapter: ChannelAdapter = {
    * `check-exists` nas duas grafias do nono dígito; só JID de telefone serve
    * (ver `phoneJidDigitsFromCheckResult`). Transporte não configurado é `null`.
    */
-  async resolveRegisteredPhone(input: { sessionRef: string; phone: string }): Promise<string | null> {
+  async resolveRegisteredPhone(input: {
+    sessionRef: string;
+    phone: string;
+  }): Promise<string | null> {
     const client = getWahaClient();
     if (!client) return null;
     return resolvePhoneJidDigitsForCall(client, input.sessionRef, input.phone);
@@ -248,22 +251,8 @@ export const wahaAdapter: ChannelAdapter = {
     const client = getWahaClient();
     if (!client) throw new Error("waha_not_configured");
     const chats = await client.listarChatsDaEtiqueta(input.sessionRef, input.labelId);
-    return chats.flatMap<ChannelLabeledContact>(({ chatId, name }) => {
-      // A importação aceita só JIDs individuais estritos. O ingest de mensagens
-      // é mais permissivo por compatibilidade histórica; aqui um formato
-      // desconhecido não pode criar contato/negócio novo por engano.
-      const phone = /^(\d{8,15})@(?:c\.us|s\.whatsapp\.net)$/.exec(chatId);
-      if (phone) return [{
-        chatId, name,
-        identity: { kind: "phone", phone: canonicalPhoneBR(`+${phone[1]}`), lid: null },
-      }];
-      const lid = /^(\d{1,30})@lid$/.exec(chatId);
-      if (lid) return [{
-        chatId, name,
-        identity: { kind: "lid", phone: null, lid: lid[1]! },
-      }];
-      return [];
-    });
+    // Um único normalizador atende leitura direta e acervo exportado.
+    return normalizarContatosEtiquetados(chats);
   },
 
   async setGroupIntake(input: { sessionRef: string; receive: boolean }) {

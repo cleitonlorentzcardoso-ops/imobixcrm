@@ -4,7 +4,9 @@ import type { NextRequest } from "next/server";
 import { z } from "zod";
 
 import { fail, ok } from "@/lib/api/wrappers";
+import { audit } from "@/lib/audit";
 import { requireRole } from "@/lib/auth/require-role";
+import { labelImportSnapshotSchema } from "@/lib/channels/label-import-snapshot";
 import {
   importLabelBatch,
   LabelImportError,
@@ -39,6 +41,7 @@ const bodySchema = z
       ),
     after: z.string().max(200).nullable().optional(),
     automations_reviewed: z.boolean().optional(),
+    snapshot: labelImportSnapshotSchema.optional(),
   })
   .strict()
   .refine((body) => body.mode === "preview" || body.automations_reviewed === true);
@@ -50,6 +53,7 @@ function errorResponse(error: unknown, requestId: string): Response {
       unsupported_channel: "Este canal não oferece leitura de etiquetas.",
       invalid_mapping: "Confira as etiquetas e as colunas escolhidas.",
       no_labels: "Este número não tem etiquetas disponíveis.",
+      account_mismatch: "O arquivo de etiquetas não pertence ao número desta conexão.",
     };
     return fail(error.code, messages[error.code], error.code === "session_not_found" ? 404 : 422, {
       requestId,
@@ -89,16 +93,37 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<Respons
   const authz = await requireRole("manager", { requestId, resource: "channel_label_import" });
   if (!authz.ok) return authz.response;
   const id = uuid.safeParse((await ctx.params).id);
-  const parsed = bodySchema.safeParse(await req.json().catch(() => null));
+  const declaredSize = Number(req.headers.get("content-length") ?? 0);
+  if (declaredSize > 4_000_000)
+    return fail("validation_error", "Arquivo de etiquetas grande demais.", 413, { requestId });
+  const raw = await req.text().catch(() => "");
+  if (raw.length > 4_000_000)
+    return fail("validation_error", "Arquivo de etiquetas grande demais.", 413, { requestId });
+  const parsed = bodySchema.safeParse(
+    (() => {
+      try {
+        return JSON.parse(raw);
+      } catch {
+        return null;
+      }
+    })(),
+  );
   if (!id.success || !parsed.success)
     return fail("validation_error", "Confira o mapeamento das etiquetas.", 400, { requestId });
+  const channelSessionId = id.data;
   if (parsed.data.mode === "apply") {
     const denied = await requireSupportWrite();
     if (denied) return denied;
   }
   try {
     const admin = createAdminClient();
-    const plan = await planLabelImport(admin, authz.org.orgId, id.data, parsed.data.mappings);
+    const plan = await planLabelImport(
+      admin,
+      authz.org.orgId,
+      channelSessionId,
+      parsed.data.mappings,
+      parsed.data.snapshot,
+    );
     if (parsed.data.mode === "preview") {
       return ok(
         {
@@ -125,8 +150,24 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<Respons
       },
       plan.assignments,
       parsed.data.after ?? null,
-      id.data,
+      channelSessionId,
     );
+    await audit({
+      organizationId: authz.org.orgId,
+      actorUserId: authz.user.id,
+      action: "lead.imported",
+      resourceType: "channel_sessions",
+      resourceId: channelSessionId,
+      requestId,
+      metadata: {
+        source: parsed.data.snapshot ? "operator_snapshot" : "connected_channel",
+        created: batch.created,
+        moved: batch.moved,
+        tagged: batch.tagged,
+        skipped: batch.skipped,
+        failed: batch.failed,
+      },
+    });
     return ok({ ...batch, conflicts: plan.conflicts }, { requestId });
   } catch (error) {
     return errorResponse(error, requestId);

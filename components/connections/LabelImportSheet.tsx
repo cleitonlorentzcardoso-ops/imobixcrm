@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -11,6 +11,11 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { apiClient } from "@/lib/api/client";
+import { ApiError } from "@/lib/api/types";
+import {
+  labelImportSnapshotSchema,
+  type LabelImportSnapshot,
+} from "@/lib/channels/label-import-snapshot";
 import { useT } from "@/hooks/i18n/useT";
 
 type Label = { id: string; name: string; colorHex: string | null };
@@ -50,6 +55,9 @@ export function LabelImportSheet({
 }) {
   const t = useT();
   const [labels, setLabels] = useState<Label[]>([]);
+  const [snapshot, setSnapshot] = useState<LabelImportSnapshot | null>(null);
+  const [sourceUnavailable, setSourceUnavailable] = useState(false);
+  const snapshotFile = useRef<HTMLInputElement>(null);
   const [funis, setFunis] = useState<Pipeline[]>([]);
   const [stages, setStages] = useState<Record<string, Stage[]>>({});
   const [choices, setChoices] = useState<Record<string, { pipeline_id: string; stage_id: string }>>(
@@ -66,12 +74,16 @@ export function LabelImportSheet({
   useEffect(() => {
     let mounted = true;
     Promise.all([
-      apiClient.get<{ data: Label[] }>(url),
+      apiClient
+        .get<{ data: Label[] }>(url)
+        .then((response) => ({ ...response, unavailable: false }))
+        .catch(() => ({ data: [] as Label[], unavailable: true })),
       apiClient.get<{ data: Pipeline[] }>("/api/v1/pipelines"),
     ])
       .then(([labelResponse, pipelineResponse]) => {
         if (!mounted) return;
         setLabels(labelResponse.data);
+        setSourceUnavailable(labelResponse.unavailable);
         setFunis(pipelineResponse.data);
       })
       .catch(() => {
@@ -84,6 +96,29 @@ export function LabelImportSheet({
       mounted = false;
     };
   }, [url, t]);
+
+  async function loadSnapshot(file: File) {
+    setError(null);
+    if (file.size > 3_500_000) {
+      setError(t("O arquivo de etiquetas é grande demais para esta importação."));
+      return;
+    }
+    try {
+      const parsed = labelImportSnapshotSchema.safeParse(JSON.parse(await file.text()));
+      if (!parsed.success) throw new Error("invalid_snapshot");
+      setSnapshot(parsed.data);
+      setLabels(parsed.data.labels.map(({ id, name, colorHex }) => ({ id, name, colorHex })));
+      setChoices({});
+      setPreview(null);
+      setTotals(null);
+    } catch {
+      setError(
+        t("Não consegui ler esse arquivo de etiquetas. Gere um novo arquivo e tente novamente."),
+      );
+    } finally {
+      if (snapshotFile.current) snapshotFile.current.value = "";
+    }
+  }
 
   const loadStages = useCallback(
     async (pipelineId: string) => {
@@ -133,12 +168,16 @@ export function LabelImportSheet({
     try {
       const response = await apiClient.post<{ data: Preview }>(
         url,
-        { mode: "preview", mappings: mappings() },
+        { mode: "preview", mappings: mappings(), ...(snapshot ? { snapshot } : {}) },
         { timeoutMs: 120_000 },
       );
       setPreview(response.data);
-    } catch {
-      setError(t("A prévia falhou. Confira a conexão e tente novamente."));
+    } catch (cause) {
+      setError(
+        cause instanceof ApiError
+          ? cause.message
+          : t("A prévia falhou. Confira a conexão e tente novamente."),
+      );
     } finally {
       setBusy(false);
     }
@@ -159,6 +198,7 @@ export function LabelImportSheet({
             mappings: mappings(),
             after: cursor,
             automations_reviewed: automationsReviewed,
+            ...(snapshot ? { snapshot } : {}),
           },
           { timeoutMs: 120_000 },
         );
@@ -176,11 +216,10 @@ export function LabelImportSheet({
         cursor = response.data.next;
       } while (cursor);
       setPreview(null);
-    } catch {
+    } catch (cause) {
+      const detail = cause instanceof ApiError ? ` ${cause.message}` : "";
       setError(
-        t(
-          "A importação parou. Os lotes concluídos foram mantidos; revise o resultado antes de repetir.",
-        ),
+        `${t("A importação parou. Os lotes concluídos foram mantidos; revise o resultado antes de repetir.")}${detail}`,
       );
     } finally {
       setBusy(false);
@@ -204,8 +243,48 @@ export function LabelImportSheet({
           </SheetDescription>
         </SheetHeader>
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto py-4">
+          <div className="rounded-md border p-3 text-sm">
+            <p>
+              {t(
+                "Se as etiquetas deste número não aparecerem, use um arquivo exportado do mesmo WhatsApp.",
+              )}
+            </p>
+            <input
+              ref={snapshotFile}
+              type="file"
+              accept=".json,application/json"
+              className="hidden"
+              aria-label={t("Arquivo de etiquetas")}
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) void loadSnapshot(file);
+              }}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              className="mt-2"
+              disabled={busy}
+              onClick={() => snapshotFile.current?.click()}
+            >
+              {t("Escolher arquivo de etiquetas")}
+            </Button>
+            {snapshot && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                {t("Arquivo carregado:")} {snapshot.labels.length} {t("etiquetas")}.{" "}
+                {t("Confira os destinos antes de importar.")}
+              </p>
+            )}
+          </div>
           {loading && <p className="text-sm text-muted-foreground">{t("Carregando etiquetas…")}</p>}
-          {!loading && labels.length === 0 && !error && (
+          {!loading && sourceUnavailable && !snapshot && (
+            <p className="text-sm text-muted-foreground">
+              {t(
+                "A conexão não entregou as etiquetas. Você pode usar um arquivo exportado deste número.",
+              )}
+            </p>
+          )}
+          {!loading && labels.length === 0 && !error && !sourceUnavailable && (
             <p className="text-sm">{t("Nenhuma etiqueta encontrada neste número.")}</p>
           )}
           {labels.map((label) => (
@@ -297,7 +376,9 @@ export function LabelImportSheet({
             disabled={busy}
             onChange={(event) => setAutomationsReviewed(event.target.checked)}
           />
-          {t("Revisei minhas automações e estou ciente de que elas podem enviar mensagens aos clientes.")}
+          {t(
+            "Revisei minhas automações e estou ciente de que elas podem enviar mensagens aos clientes.",
+          )}
         </label>
         <div className="flex gap-2 pt-3">
           <Button

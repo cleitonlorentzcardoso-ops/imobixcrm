@@ -5,6 +5,7 @@ import { createLeadHandler, moveLeadHandler, updateLeadHandler } from "@/app/api
 import type { HandlerCtx } from "@/lib/api/handlers/types";
 import { getAdapter } from "@/lib/channels";
 import { ORIGEM_DO_WHATSAPP } from "@/lib/channels/origem-do-negocio";
+import { snapshotContacts, type LabelImportSnapshot } from "@/lib/channels/label-import-snapshot";
 import { rotuloDoContato } from "@/lib/contacts/rotulo-do-contato";
 import {
   CHANNEL_SESSION_REF_COLUMNS,
@@ -23,7 +24,11 @@ type Assignment = { contact: ChannelLabeledContact; label: ChannelLabel; mapping
 export class LabelImportError extends Error {
   constructor(
     public readonly code:
-      "session_not_found" | "unsupported_channel" | "invalid_mapping" | "no_labels",
+      | "session_not_found"
+      | "unsupported_channel"
+      | "invalid_mapping"
+      | "no_labels"
+      | "account_mismatch",
   ) {
     super(code);
   }
@@ -32,7 +37,7 @@ export class LabelImportError extends Error {
 async function sessionAndAdapter(admin: SupabaseClient, org: string, sessionId: string) {
   const { data, error } = await admin
     .from("channel_sessions")
-    .select(`id, ${CHANNEL_SESSION_REF_COLUMNS}`)
+    .select(`id, phone_number, ${CHANNEL_SESSION_REF_COLUMNS}`)
     .eq("organization_id", org)
     .eq("id", sessionId)
     .is("archived_at", null)
@@ -43,7 +48,11 @@ async function sessionAndAdapter(admin: SupabaseClient, org: string, sessionId: 
   const adapter = getAdapter(ref.provider as ChannelProvider);
   if (!adapter.listLabels || !adapter.listLabeledContacts)
     throw new LabelImportError("unsupported_channel");
-  return { adapter, sessionRef: resolveSessionRef(ref) };
+  return {
+    adapter,
+    sessionRef: resolveSessionRef(ref),
+    phoneNumber: (data as { phone_number: string | null }).phone_number,
+  };
 }
 
 export async function listChannelLabels(admin: SupabaseClient, org: string, sessionId: string) {
@@ -57,9 +66,17 @@ export async function planLabelImport(
   org: string,
   sessionId: string,
   mappings: LabelMapping[],
+  snapshot?: LabelImportSnapshot,
 ) {
-  const { adapter, sessionRef } = await sessionAndAdapter(admin, org, sessionId);
-  const labels = await adapter.listLabels!({ sessionRef });
+  const { adapter, sessionRef, phoneNumber } = await sessionAndAdapter(admin, org, sessionId);
+  if (snapshot && phoneNumber) {
+    const account = snapshot.account_id.replace(/\D/g, "");
+    const connected = phoneNumber.replace(/\D/g, "");
+    if (account !== connected) throw new LabelImportError("account_mismatch");
+  }
+  const labels = snapshot
+    ? snapshot.labels.map(({ id, name, colorHex }) => ({ id, name, colorHex }))
+    : await adapter.listLabels!({ sessionRef });
   if (labels.length === 0) throw new LabelImportError("no_labels");
   const known = new Map(labels.map((label) => [label.id, label]));
   const stageIds = mappings.map((m) => m.stage_id);
@@ -96,7 +113,11 @@ export async function planLabelImport(
     mappings.map(async (mapping) => ({
       mapping,
       label: known.get(mapping.label_id)!,
-      contacts: await adapter.listLabeledContacts!({ sessionRef, labelId: mapping.label_id }),
+      contacts: snapshot
+        ? snapshotContacts(
+            snapshot.labels.find((label) => label.id === mapping.label_id)?.chats ?? [],
+          )
+        : await adapter.listLabeledContacts!({ sessionRef, labelId: mapping.label_id }),
     })),
   );
   return makeLabelAssignments(labeled);
