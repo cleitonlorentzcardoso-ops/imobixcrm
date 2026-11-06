@@ -9,7 +9,7 @@ import { Card } from "@/components/ui/card";
 import { InterfaceEditor } from "@/components/team/InterfaceEditor";
 import { useT } from "@/hooks/i18n/useT";
 import type { Role } from "@/lib/auth/types";
-import { lerInterface, type InterfaceSettings } from "@/lib/navigation/interface";
+import { AREAS_DE_ATENDIMENTO_ESSENCIAL, lerInterface, type InterfaceSettings } from "@/lib/navigation/interface";
 
 interface Props {
   /** O que está gravado hoje em `organizations.interface_settings`. */
@@ -47,9 +47,35 @@ export function InterfaceDaEmpresaForm({ initial, role }: Props) {
           "Escolha as áreas que esta empresa mostra. Cada pessoa escolhe menos do que isto em Equipe — nunca mais — e as áreas essenciais continuam sempre visíveis. As permissões não mudam: o que o papel autoriza segue acessível por link, aviso e busca.",
         )}
       </p>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        disabled={isPending}
+        onClick={() => setValue({ preset: "completa", destinos: [...AREAS_DE_ATENDIMENTO_ESSENCIAL], inbox: "unificada" })}
+      >
+        {t("Escolher menu essencial")}
+      </Button>
+      <p className="text-xs text-muted-foreground">
+        {t("Mostra Inbox, Funis, Contatos, Conexões e administração. Na caixa de entrada, reúne conversas em andamento, fechadas e arquivadas em Todas. Depois clique em Aplicar interface.")}
+      </p>
+      <label className="flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={value.inbox === "unificada"}
+          disabled={isPending}
+          onChange={(event) =>
+            setValue((current) => ({
+              ...current,
+              inbox: event.target.checked ? "unificada" : undefined,
+            }))
+          }
+        />
+        {t("Mostrar somente Todas na caixa de entrada")}
+      </label>
       <InterfaceEditor
         value={value}
-        onChange={setValue}
+        onChange={(next) => setValue((current) => ({ ...next, inbox: current.inbox }))}
         role={role}
         disabled={isPending}
       />

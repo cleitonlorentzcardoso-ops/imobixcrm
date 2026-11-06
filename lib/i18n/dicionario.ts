@@ -37,6 +37,9 @@ import type { Idioma } from "./idiomas";
 type Traducoes = Record<string, Partial<Record<Exclude<Idioma, "pt-BR">, string>>>;
 
 export const DICIONARIO: Traducoes = {
+  "Escolher menu essencial": { es: "Elegir menú esencial" },
+  "Mostra Inbox, Funis, Contatos, Conexões e administração. Na caixa de entrada, reúne conversas em andamento, fechadas e arquivadas em Todas. Depois clique em Aplicar interface.": { es: "Muestra bandeja de entrada, embudos, contactos, conexiones y administración. En la bandeja reúne conversaciones activas, cerradas y archivadas en Todas. Después haz clic en Aplicar interfaz." },
+  "Mostrar somente Todas na caixa de entrada": { es: "Mostrar solo Todas en la bandeja de entrada" },
   "Filas": { es: "Colas" },
   "Filas de atendimento": { es: "Colas de atención" },
   "Acompanhe as filas de campanhas e assuma conversas aguardando atendimento.": { es: "Consulta las colas de campañas y toma las conversaciones en espera." },

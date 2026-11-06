@@ -2,8 +2,8 @@
   "schema_version": 1,
   "diagram_type": "architecture",
   "meta": {
-    "title": "Interface por vínculo",
-    "subtitle": "Apresentação por membro sem nova autorização",
+    "title": "Interface por empresa e vínculo",
+    "subtitle": "Menu e Inbox por empresa, sem nova autorização",
     "output": "interface-por-vinculo.html",
     "quality_profile": "standard"
   },
@@ -38,6 +38,13 @@
       "label": "Equipe / convite / criar responsável"
     },
     {
+      "id": "editor_empresa",
+      "lane": "humano",
+      "col": 0,
+      "type": "ui",
+      "label": "Organização: menu essencial e Inbox unificado"
+    },
+    {
       "id": "write",
       "lane": "app",
       "col": 1,
@@ -57,6 +64,13 @@
       "col": 3,
       "type": "database",
       "label": "user_organizations.interface_settings"
+    },
+    {
+      "id": "interface_empresa",
+      "lane": "db",
+      "col": 3,
+      "type": "database",
+      "label": "organizations.interface_settings"
     },
     {
       "id": "context",
@@ -80,6 +94,13 @@
       "label": "Sidebar / mobile / hubs / busca / home / sino"
     },
     {
+      "id": "inbox",
+      "lane": "humano",
+      "col": 6,
+      "type": "ui",
+      "label": "Inbox: Todas, sob escopo RLS"
+    },
+    {
       "id": "refresh",
       "lane": "app",
       "col": 7,
@@ -101,6 +122,11 @@
       "label": "salvar configuração"
     },
     {
+      "from": "editor_empresa",
+      "to": "write",
+      "label": "aplicar interface"
+    },
+    {
       "from": "editor",
       "to": "invite",
       "label": "emitir convite"
@@ -109,6 +135,11 @@
       "from": "write",
       "to": "membership",
       "label": "persistir por org"
+    },
+    {
+      "from": "write",
+      "to": "interface_empresa",
+      "label": "persistir escolha da empresa"
     },
     {
       "from": "invite",
@@ -121,6 +152,11 @@
       "label": "leitura autorizada"
     },
     {
+      "from": "interface_empresa",
+      "to": "context",
+      "label": "combinar com vínculo"
+    },
+    {
       "from": "context",
       "to": "catalog",
       "label": "papel e seleção"
@@ -129,6 +165,11 @@
       "from": "catalog",
       "to": "navigation",
       "label": "destinos visíveis"
+    },
+    {
+      "from": "context",
+      "to": "inbox",
+      "label": "visão única da empresa"
     },
     {
       "from": "membership",

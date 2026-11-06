@@ -17,7 +17,7 @@ import { describe, expect, it, vi } from "vitest";
  */
 
 import { listConversationsHandler } from "@/app/api/v1/conversations/_handler";
-import { tabToFilter } from "@/components/inbox/InboxLayout";
+import { abaDaCaixa, tabToFilter } from "@/components/inbox/InboxLayout";
 import { CONVERSATION_TERMINAL_STATUSES, listConversationsQuerySchema } from "@/lib/schemas";
 
 // ---------------------------------------------------------------------------
@@ -25,6 +25,12 @@ import { CONVERSATION_TERMINAL_STATUSES, listConversationsQuerySchema } from "@/
 // ---------------------------------------------------------------------------
 
 describe("tabToFilter — o que cada aba significa", () => {
+  it("a caixa unificada abre em Todas e reúne também fechadas e arquivadas", () => {
+    expect(abaDaCaixa(null, true)).toBe("all");
+    expect(abaDaCaixa("unassigned", true)).toBe("all");
+    expect(tabToFilter(abaDaCaixa("closed", true))).toEqual({});
+    expect(abaDaCaixa(null, false)).toBe("unassigned");
+  });
   it("Minhas pede as minhas SEM as terminais", () => {
     expect(tabToFilter("mine")).toEqual({ assigned_to: "me", exclude_finished: true });
   });
