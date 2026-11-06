@@ -9,6 +9,8 @@ const ids = NAV_CATALOG.map((d) => d.href);
 export const interfaceSettingsSchema = z
   .object({
     preset: z.enum(["completa", "simplificada"]),
+    /** Escolha da empresa; vínculos não podem alterar a caixa de entrada. */
+    inbox: z.enum(["unificada"]).optional(),
     destinos: z
       .array(z.enum(ids as [NavDestinationId, ...NavDestinationId[]]))
       .min(1)
@@ -26,6 +28,16 @@ const SIMPLIFICADA: readonly NavDestinationId[] = [
   "/app/contacts",
   "/app/tasks",
   "/app/connections",
+];
+/** Operação de atendimento humano: as demais áreas continuam acessíveis por permissão. */
+export const AREAS_DE_ATENDIMENTO_ESSENCIAL: readonly NavDestinationId[] = [
+  "/app/inbox",
+  "/app/kanban",
+  "/app/contacts",
+  "/app/connections",
+  "/app/team",
+  "/app/settings/tenant",
+  "/app/settings/atendimento",
 ];
 /** Portas pessoais e recuperação administrativa não são removíveis. Atualização
  * e administração de plataforma têm consumidores próprios com seus gates atuais.
@@ -94,14 +106,18 @@ export function lerInterface(raw: unknown): {
   const destinos = Array.isArray(value.destinos)
     ? ids.filter((id) => (value.destinos as unknown[]).includes(id))
     : undefined;
+  const inbox = value.inbox === "unificada" ? value.inbox : undefined;
   const parsed = interfaceSettingsSchema.safeParse({
     preset: value.preset,
+    ...(inbox ? { inbox } : {}),
     ...(destinos ? { destinos } : {}),
   });
   if (!parsed.success) return { settings: INTERFACE_COMPLETA, needsAdjustment: true };
   return {
     settings: parsed.data,
-    needsAdjustment: !!destinos && destinos.length !== (value.destinos as unknown[]).length,
+    needsAdjustment:
+      (!!destinos && destinos.length !== (value.destinos as unknown[]).length) ||
+      (value.inbox !== undefined && !inbox),
   };
 }
 export function destinosDaInterface(
@@ -208,7 +224,8 @@ export function combinarInterfaces(daEmpresa: unknown, doVinculo: unknown): Inte
   const sVinculo = lerInterface(doVinculo).settings;
   const empresa = conjuntoEscolhido(sEmpresa);
   const vinculo = conjuntoEscolhido(sVinculo);
-  if (!empresa && !vinculo) return INTERFACE_COMPLETA;
+  const inbox = sEmpresa.inbox === "unificada" ? { inbox: "unificada" as const } : {};
+  if (!empresa && !vinculo) return { ...INTERFACE_COMPLETA, ...inbox };
 
   /**
    * ⚠️ PRESET SOBREVIVE À COMBINAÇÃO, e sem isto a exceção da porta de módulo é CÓDIGO MORTO.
@@ -227,10 +244,10 @@ export function combinarInterfaces(daEmpresa: unknown, doVinculo: unknown): Inte
    * ter lista explícita para o resultado voltar a ser lista — aí existe decisão humana a respeitar.
    */
   const soPreset = sEmpresa.destinos === undefined && sVinculo.destinos === undefined;
-  if (soPreset) return { preset: "simplificada" };
+  if (soPreset) return { preset: "simplificada", ...inbox };
 
   const soUm = empresa ?? vinculo;
-  if (!empresa || !vinculo) return { preset: "completa", destinos: [...(soUm as readonly NavDestinationId[])] };
+  if (!empresa || !vinculo) return { preset: "completa", destinos: [...(soUm as readonly NavDestinationId[])], ...inbox };
   const comuns = empresa.filter((id) => vinculo.includes(id));
-  return { preset: "completa", destinos: [...(comuns.length > 0 ? comuns : SO_O_ESSENCIAL)] };
+  return { preset: "completa", destinos: [...(comuns.length > 0 ? comuns : SO_O_ESSENCIAL)], ...inbox };
 }

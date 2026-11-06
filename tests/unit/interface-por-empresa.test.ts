@@ -21,6 +21,7 @@ import { describe, expect, it } from "vitest";
 
 import { NAV_CATALOG } from "@/lib/navigation/catalogo";
 import {
+  AREAS_DE_ATENDIMENTO_ESSENCIAL,
   combinarInterfaces,
   destinosDaInterface,
   essencial,
@@ -52,6 +53,30 @@ const essenciais = (role: "agent" | "admin" = "admin") =>
   NAV_CATALOG.filter((d) => essencial(d, role)).map((d) => d.href);
 
 describe("portas por empresa (issue #1341)", () => {
+  it("o menu essencial mantém atendimento e CRM, sem IA, Agenda, Tarefas ou Filas", () => {
+    expect(AREAS_DE_ATENDIMENTO_ESSENCIAL).toEqual(expect.arrayContaining([
+      "/app/inbox", "/app/kanban", "/app/contacts", "/app/connections",
+    ]));
+    for (const oculto of ["/app/filas", "/app/agenda", "/app/tasks", "/app/ai/agents"]) {
+      expect(AREAS_DE_ATENDIMENTO_ESSENCIAL).not.toContain(oculto);
+    }
+  });
+  it("a empresa escolhe Inbox unificado; o vínculo não pode ligá-lo", () => {
+    const empresa = { preset: "completa", inbox: "unificada" };
+    expect(combinarInterfaces(empresa, completa).inbox).toBe("unificada");
+    expect(combinarInterfaces(completa, empresa).inbox).toBeUndefined();
+    expect(lerInterface(empresa).settings.inbox).toBe("unificada");
+  });
+  it("valor antigo ou inválido do Inbox não reabre áreas ocultas", () => {
+    const leitura = lerInterface({
+      preset: "completa",
+      destinos: ["/app/inbox"],
+      inbox: "desconhecida",
+    });
+    expect(leitura.settings.destinos).toEqual(["/app/inbox"]);
+    expect(leitura.settings.inbox).toBeUndefined();
+    expect(leitura.needsAdjustment).toBe(true);
+  });
   it("sem escolha de nenhum dos lados nada muda: a empresa completa segue completa", () => {
     expect(combinarInterfaces(completa, completa)).toEqual(INTERFACE_COMPLETA);
     expect(combinarInterfaces(undefined, null).destinos).toBeUndefined();

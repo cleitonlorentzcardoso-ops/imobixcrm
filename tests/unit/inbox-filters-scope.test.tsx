@@ -107,6 +107,12 @@ describe("visibleInboxTabs (lógica pura de visões)", () => {
 });
 
 describe("InboxFilters render — 3 visões + escopo", () => {
+  it("na caixa unificada mostra só Todas, inclusive para atendente com RLS restrita", () => {
+    setOrg("agent", "own_and_unassigned");
+    render(<InboxFilters value={{ ...VALUE, tab: "all" }} onChange={() => {}} unificada />);
+    expect(screen.getAllByRole("tab")).toHaveLength(1);
+    expect(screen.getByRole("tab", { name: /Todas/ })).toBeInTheDocument();
+  });
   it("centraliza a aba selecionada e indica as abas fora da coluna", () => {
     setOrg("manager", "all");
     let onResize: ResizeObserverCallback = () => {};
