@@ -8,6 +8,14 @@ Se você roda o DeskcommCRM numa VPS, **leia a seção da versão para a qual es
 
 ## [Não lançado]
 
+## [1.84.0] — 2026-10-20
+
+### Adicionado
+
+- **Importar etiquetas antigas sem trocar a conexão do WhatsApp** Quando o motor da conexão não mostra as etiquetas antigas, quem administra pode carregar um
+  arquivo exportado de uma instância de leitura do mesmo número. A prévia e a escolha da coluna
+  continuam obrigatórias, e o WhatsApp que atende clientes não é alterado.
+
 ## [1.83.1] — 2026-10-18
 
 ### Corrigido
@@ -11438,7 +11446,8 @@ Primeira versão marcada do DeskcommCRM. O projeto vinha sendo desenvolvido publ
 
 - **Node 22 é obrigatório para desenvolvimento.** A suíte de invariantes instancia o cliente do Supabase, que exige o `WebSocket` global — nativo apenas a partir do Node 22. Isso não afeta quem apenas hospeda: a VPS roda a imagem pronta.
 
-[Não lançado]: https://github.com/melgarafael/DeskcommCRM/compare/v1.83.1...HEAD
+[Não lançado]: https://github.com/melgarafael/DeskcommCRM/compare/v1.84.0...HEAD
+[1.84.0]: https://github.com/melgarafael/DeskcommCRM/compare/v1.83.1...v1.84.0
 [1.83.1]: https://github.com/melgarafael/DeskcommCRM/compare/v1.83.0...v1.83.1
 [1.83.0]: https://github.com/melgarafael/DeskcommCRM/compare/v1.82.1...v1.83.0
 [1.82.1]: https://github.com/melgarafael/DeskcommCRM/compare/v1.82.0...v1.82.1
