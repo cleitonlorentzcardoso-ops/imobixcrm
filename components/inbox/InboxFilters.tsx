@@ -100,9 +100,11 @@ export interface InboxFiltersValue {
 interface Props {
   value: InboxFiltersValue;
   onChange: (next: InboxFiltersValue) => void;
+  /** A empresa escolheu uma caixa única. O escopo das conversas segue na RLS. */
+  unificada?: boolean;
 }
 
-export function InboxFilters({ value, onChange }: Props) {
+export function InboxFilters({ value, onChange, unificada = false }: Props) {
   const t = useT();
   const [searchInput, setSearchInput] = useState(value.search);
   const tabsListRef = useRef<HTMLDivElement>(null);
@@ -206,9 +208,11 @@ export function InboxFilters({ value, onChange }: Props) {
     channel_session_id: value.channel_session_id,
   });
 
-  const tabs = activeOrg
-    ? visibleInboxTabs(activeOrg.role, activeOrg.visibility_mode)
-    : INBOX_TABS.map((t) => t.value);
+  const tabs: InboxTab[] = unificada
+    ? ["all"]
+    : activeOrg
+      ? visibleInboxTabs(activeOrg.role, activeOrg.visibility_mode)
+      : INBOX_TABS.map((t) => t.value);
   const moveTab = (direction: -1 | 1) => {
     const next = tabs[tabs.indexOf(value.tab) + direction];
     if (next) onChange({ ...value, tab: next });

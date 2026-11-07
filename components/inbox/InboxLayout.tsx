@@ -135,6 +135,11 @@ function parseFilterParam(v: string | null): InboxTab {
   return v && FILTER_TABS.includes(v as InboxTab) ? (v as InboxTab) : "unassigned";
 }
 
+/** A escolha da empresa prevalece inclusive sobre links antigos com ?filter=. */
+export function abaDaCaixa(param: string | null, unificada: boolean): InboxTab {
+  return unificada ? "all" : parseFilterParam(param);
+}
+
 /**
  * O getter de `window.localStorage` LANÇA (`SecurityError`) quando o navegador
  * bloqueia o armazenamento do site. O `try` de `lerLarguras`/`gravarLarguras`
@@ -163,7 +168,8 @@ export function InboxLayout({ initialSelectedId = null, rascunho = null }: Inbox
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const tab = parseFilterParam(searchParams.get("filter"));
+  const unificada = activeOrg?.interface_settings?.inbox === "unificada";
+  const tab = abaDaCaixa(searchParams.get("filter"), unificada);
   const idNaUrl = searchParams.get("id");
   /**
    * `?tag=` é o destino do link de cada linha do relatório Por etiqueta
@@ -628,7 +634,7 @@ export function InboxLayout({ initialSelectedId = null, rascunho = null }: Inbox
           colunas.lista,
         )}
       >
-        <InboxFilters value={filterValue} onChange={setFilterValue} />
+        <InboxFilters value={filterValue} onChange={setFilterValue} unificada={unificada} />
         <div className="min-h-0 flex-1 overflow-hidden">
           <ConversationList
             listQuery={listQ}
